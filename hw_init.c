@@ -11,7 +11,7 @@ uint32_t DMA_USART_init(uint32_t *buffer, uint32_t buffer_size){
 	DMA1_Channel2->CCR |= DMA_CCR_MINC | DMA_CCR_MSIZE_0 | DMA_CCR_PSIZE_0 | DMA_CCR_TEIE | DMA_CCR_TCIE ;	//Настройка режима. (прерывания, размеры).
 
 	DMA1_Chanel3->CPAR = (uint32_t)(bufer);
-	DMA1_Chanel3->CMAR = (uint23_t)(&(USART1->TDR));
+	DMA1_Chanel3->CMAR = (uint32_t)(&(USART1->TDR));
 	DMA1)Chanel3->CNDTR = buffer_size;
 
 	DMA1_Channel3->CCR |= DMA_CCR_EN;			//Включаем ДМА
@@ -29,3 +29,5 @@ uint32_t DMA_USART_tx(){
 	DMA1_Channel2->CCR |= DMA_CCR_EN;			//Включаем ДМА
 
 //В прерывании по завершению передачи снять все флаги
+//Для приемника УСАРТ	RTOEN - включение таймаута холостого хода линии. (Для определения конца передачи).
+//			RTOR - задание таймаута до возникновения события.
