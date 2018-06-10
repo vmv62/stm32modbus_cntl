@@ -8,6 +8,12 @@ void dma_start_transsmit(uint8_t *buffer, uint16_t buffer_len);
 void dma_usart_config(uint8_t *buffer, uint16_t buffer_len);
 
 
+//Структура для хранения сервиных регистров.
+static struct {
+	uint8_t end_transmission;
+	uint32_t byte_count;
+}Serv;
+
 
 int main(void){
 
@@ -18,8 +24,9 @@ PDU_TypeDef PDU;
 	byte_count = 0;
     while(1)
     {
-    	//dma_start_transsmit(buffer, sizeof(buffer));
-    	if(transmission_end){
+    	//Обработчик состояния выставленного флага конца передачи.
+    	if(Serv.transmission_end){
+		Serv.transmission_end = 0;
     		dma_start_transsmit(&PDU, sizeof(PDU));
     	}
     	a++;
@@ -39,11 +46,11 @@ void USART1_IRQHandler(void){
 	if(USART1->ISR & USART_ISR_RXNE){	//Прерывание "регистр приема не пуст"
 		USART1->CR1 |= USART_CR1_RTOIE;	//Включение прерывания по простою линии приема.
 		USART1->CR1 |= USART_CR1_RXNEIE; //отключаем прерывание приемный регистр не пуст, чтобы не оттягивала работу на себя. Флаг сбрасывается при чтении приемного регистра.
-		byte_count++;			//Почему то не инкрементируется? Видимо переменная не видна.
+		Serv.byte_count++;			//Почему то не инкрементируется? Видимо переменная не видна.
 	}
 	if(USART1->ISR & USART_ISR_RTOIF{	//Прерывание по простою линии приема.
 		USART1->ICR |= USART_ICR_RTOCF; //Сброс флага прерывания по простою линии приема.
 		USART1->CR1 &= ~USART_CR1_RTOIE; //Отключаем прерывание по простою, чтобы оно не мешало.
-		transmission_end = 1;		//Переменная инициализируется это работает.
+		Serv.end_transmisstion = 1;		//Переменная инициализируется это работает.
 	}
 }
