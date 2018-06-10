@@ -1,3 +1,5 @@
+#include "hw_init.h"
+
 void hdw_init(){
 
 //ADC config

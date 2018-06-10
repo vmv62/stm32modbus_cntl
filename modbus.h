@@ -40,13 +40,13 @@ enum {
 };
 
 //Наполнение таблицы. часть касаемая содержания регистров хранения.
-static typedef struct{
+typedef struct{
 	uint16_t CONT_FLAG;
 	uint16_t VAR_COIL;
 }HoldingRegs_TypeDef;
 
 //Таблица регистров контроллера
-static typedef struct{
+typedef struct{
 	uint16_t COILS;
 	uint16_t INPUTS;
 	HoldingRegs_TypeDef HOLD;
