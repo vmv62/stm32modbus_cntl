@@ -1,5 +1,6 @@
 #include "stm32f0xx.h"
 #include "modbus.h"
+#include "hw_init.h"
 
 void hdw_init();
 int get_adc();
@@ -25,73 +26,24 @@ PDU_TypeDef PDU;
     }
 }
 
-int get_adc(){
-	ADC1->CHSELR |= ADC_CHSELR_CHSEL16;  //Select chanel where sensor connected
-//	ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2;
-	ADC->CCR |= ADC_CCR_TSEN;			//Enable temperature sensor
-	ADC1->CR |= ADC_CR_ADSTART;			//starting adc converting
-	while(!(ADC1->ISR && ADC_ISR_EOC));
 
-	return ADC1->DR;
-
-}
-
-void hdw_init(){
-
-//ADC config
-//	RCC->APB2ENR |= RCC_APB2ENR_ADC1EN; //Enable clock to ADC
-	RCC->APB2ENR |= RCC_APB2ENR_USART1EN; //Enable clock to Usart
-	RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
-	RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-	//ADC setup
-	ADC1->ISR |=(ADC_ISR_ADRDY); //Clear ADC ready flag
-	ADC1->CR |=(ADC_CR_ADEN); //ADC on
-//	while(!(ADC1->ISR && ADC_ISR_ADRDY)){} //wait while ADC calibrate
-	asm("CPSIE i");
-	NVIC->ISER |= 1<<USART1_IRQn;
-}
-
-void dma_usart_config(uint8_t *buffer, uint16_t buffer_len){
-	//GPIO config
-	GPIOA->MODER |= GPIO_MODER_MODER9_1 | GPIO_MODER_MODER10_1;  			//Õ‡ÒÚÓÈÍ‡ ‚ıÓ‰/‚˚ıÓ‰. ¿Î¸ÚÂÌ‡ÚË‚Ì˚Â ÙÛÌÍˆËË
-	GPIOA->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR9 | GPIO_OSPEEDER_OSPEEDR10;  	//–‡·ÓÚ‡ ‚ ‚˚ÒÓÍÓÒÍÓÓÒÚÌÓÏ ÂÊËÏÂ
-	GPIOA->AFR[1] |= 0x110;													//¿Î¸ÚÂÌ‡ÚË‚Ì‡ˇ ÙÛÌÍˆËˇ ‰Îˇ GPIOA_9 GPIOA_10 ÔÓÛÏÓÎ˜‡ÌË˛ Ì‡ÒÚÓÂÌ Ì‡ ‚‚Ó‰/‚˚‚Ó‰
-	//UART config
-	USART1->BRR = 0x0341;	//Õ‡ÒÚÓÈÍ‡ ÒÍÓÓÒÚË ÔÂÂ‰‡˜Ë. 0ı0341 - 9600
-	USART1->CR1 |= USART_CR1_TE | USART_CR1_RE | USART_CR1_UE | USART_CR1_RXNEIE;  //Transmit enable, recive enable, usart enable
-	USART1->RTOR = 50;	//¬ÂÏˇ ÓÊË‰‡ÌËˇ ·ËÚÓ‚ ÔÓÒÎÂ ÔËÂÏ‡ ÔÓÒÎÂ‰ÌÂ„Ó.
-
-	//DMA config
-	USART1->CR3 |= USART_CR3_DMAT | USART_CR3_DMAR; 			//–‡ÁÂ¯‡ÂÏ ËÒÔÓÎ¸ÁÓ‚‡Ú¸ DMA Ì‡ ÔÂÂ‰‡˜Û.
-	DMA1_Channel2->CPAR = (uint32_t)(&(USART1->TDR)); 	//«‡ÔËÒ˚‚‡ÂÏ ‡‰ÂÒ Â„ËÒÚ‡ ‰‡ÌÌ˚ı Â„ËÒÚ‡ ‰Îˇ ÓÚÔ‡‚ÍË.
-	DMA1_Channel2->CMAR = (uint32_t)buffer;		//«‡ÔËÒ˚‚‡ÂÏ ‡‰ÂÒ Ô‡ÏˇÚË ÓÚÍÛ‰‡ ·Û‰ÛÚ ˜ËÚ‡Ú¸Òˇ ‰‡ÌÌ˚Â.
-	DMA1_Channel2->CNDTR = buffer_len;				//«‡ÌÓÒËÏ ‡ÁÏÂ ‰‡ÌÌ˚ı ‰Îˇ ÓÚÔ‡‚ÍË.
-	DMA1_Channel2->CCR |= DMA_CCR_DIR | DMA_CCR_MINC | DMA_CCR_TEIE | DMA_CCR_TCIE;	//Õ‡ÒÚÓÈÍ‡ ÂÊËÏ‡. (ÔÂ˚‚‡ÌËˇ, ‡ÁÏÂ˚).
-
-	DMA1_Channel3->CPAR = (uint32_t)(&(USART1->RDR)); 	//¿‰ÂÒ ÔÂÂÙÂËË
-	DMA1_Channel3->CMAR = (uint32_t)(buffer);			//¿‰ÂÒ ·ÛÙÛ‡ ‰Îˇ ÔËÂÏ‡.
-	DMA1_Channel3->CNDTR = buffer_len;				//–‡ÁÏÂ ·ÛÙÂ‡.
-	DMA1_Channel3->CCR |=  DMA_CCR_MINC;	//Õ‡ÒÚÓÈÍ‡ ÂÊËÏ‡. (ÔÂ˚‚‡ÌËˇ, ‡ÁÏÂ˚).
-	DMA1_Channel3->CCR |= DMA_CCR_EN;		//¬ÍÎ˛˜‡ÂÏ ƒÃ¿3
-}
-
-void dma_start_transsmit(uint8_t *buffer, uint16_t buffer_len){
-	if(DMA1->ISR && DMA_ISR_TCIF2 ){
-		DMA1->IFCR |= DMA_IFCR_CGIF2;
-		DMA1_Channel2->CCR &= ~DMA_CCR_EN;
-		DMA1_Channel2->CNDTR = buffer_len;
-	}
-	DMA1_Channel2->CCR |= DMA_CCR_EN; //œËÌ‡ÂÏ ƒÃ¿ ‰Îˇ Ì‡˜‡Î‡ ÔÂÂ‰‡˜Ë.
-}
 
 void USART1_IRQHandler(void){
-	if(USART1->ISR & USART_ISR_RXNE){	//ÂÒÎË ÔËÂÏÌ˚È Â„ËÒÚ ÛÒ‡Ú‡ ÌÂ ÔÛÒÚ.
-		USART1->CR1 |= USART_CR1_IDLEIE;
-		byte_count++;
+//1. –û–ø—Ä–µ–¥–µ–ª–∏—Ç—å –ø—Ä–∏–µ–º –ø–µ—Ä–≤–æ–≥–æ –±–∞–π—Ç–∞.				–ï—Å—Ç—å
+//2. –í–∫–ª—é—á–∏—Ç—å –ø—Ä–µ—Ä—ã–≤–∞–Ω–∏–µ –ø–æ –ø—Ä–æ—Å—Ç–æ—é –ª–∏–Ω–∏–∏ –ø—Ä–∏–µ–º–∞.		–ï—Å—Ç—å
+//3. –û—Ç–∫–ª—é—á–∏—Ç—å –ø—Ä–µ—Ä—ã–≤–∞–Ω–∏–µ –ø–æ —Ä–∏–µ–º—É –±–∞–π—Ç–∞.	
+//4. –ü—Ä–∏ –ø—Ä–µ—Ä—ã–≤–∞–Ω–∏–∏ –ø–æ –ø—Ä–æ—Å—Ç–æ—é –ª–∏–Ω–∏–∏ –≤—ã—Å—Ç–∞–≤–∏—Ç—å —Ñ–ª–∞–≥ –ø—Ä–∏–µ–º –∑–∞–≤–µ—Ä—à–µ–Ω.
+//5. –í—ã—á–∏—Å–ª–∏—Ç—å –∫–æ–ª–ª–∏—á–µ—Å—Ç–≤–æ –ø—Ä–∏–Ω—è—Ç—ã—Ö –¥–∞–Ω–Ω—ã—Ö (–≤ –¥–º–∞ –µ—Å—Ç—å —Ä–µ–≥–∏—Å—Ç—Ä —Å –∫–æ–ª–∏—á–µ—Å—Ç–≤–æ–º –¥–∞–Ω–Ω—ã—Ö –∫–æ—Ç–æ—Ä—ã–µ –æ—Å—Ç–∞–ª–æ—Å—å –ø—Ä–∏–Ω—è—Ç—å)
+//6. –í –æ—Å–Ω–æ–≤–Ω–æ–º —Ü–∏–∫–ª–µ –ø–µ—Ä–µ–¥–∞—Ç—å –∞–¥—Ä–µ—Å –±—É—Ñ–µ—Ä–∞ –∏ –∫–æ–ª–ª–∏—á–µ—Å—Ç–≤–æ –±–∞–π—Ç –ø–∞—Ä—Å–µ—Ä—É –ü–î–£.
+	
+	if(USART1->ISR & USART_ISR_RXNE){	//–ü—Ä–µ—Ä—ã–≤–∞–Ω–∏–µ "—Ä–µ–≥–∏—Å—Ç—Ä –ø—Ä–∏–µ–º–∞ –Ω–µ –ø—É—Å—Ç"
+		USART1->CR1 |= USART_CR1_RTOIE;	//–í–∫–ª—é—á–µ–Ω–∏–µ –ø—Ä–µ—Ä—ã–≤–∞–Ω–∏—è –ø–æ –ø—Ä–æ—Å—Ç–æ—é –ª–∏–Ω–∏–∏ –ø—Ä–∏–µ–º–∞.
+		USART1->CR1 |= USART_CR1_RXNEIE; //–æ—Ç–∫–ª—é—á–∞–µ–º –ø—Ä–µ—Ä—ã–≤–∞–Ω–∏–µ –ø—Ä–∏–µ–º–Ω—ã–π —Ä–µ–≥–∏—Å—Ç—Ä –Ω–µ –ø—É—Å—Ç, —á—Ç–æ–±—ã –Ω–µ –æ—Ç—Ç—è–≥–∏–≤–∞–ª–∞ —Ä–∞–±–æ—Ç—É –Ω–∞ —Å–µ–±—è. –§–ª–∞–≥ —Å–±—Ä–∞—Å—ã–≤–∞–µ—Ç—Å—è –ø—Ä–∏ —á—Ç–µ–Ω–∏–∏ –ø—Ä–∏–µ–º–Ω–æ–≥–æ —Ä–µ–≥–∏—Å—Ç—Ä–∞.
+		byte_count++;			//–ü–æ—á–µ–º—É —Ç–æ –Ω–µ –∏–Ω–∫—Ä–µ–º–µ–Ω—Ç–∏—Ä—É–µ—Ç—Å—è? –í–∏–¥–∏–º–æ –ø–µ—Ä–µ–º–µ–Ω–Ω–∞—è –Ω–µ –≤–∏–¥–Ω–∞.
 	}
-	if(USART1->ISR & USART_ISR_IDLE){
-		USART1->ICR |= USART_ICR_IDLECF;
-		transmission_end = 1;
+	if(USART1->ISR & USART_ISR_RTOIF{	//–ü—Ä–µ—Ä—ã–≤–∞–Ω–∏–µ –ø–æ –ø—Ä–æ—Å—Ç–æ—é –ª–∏–Ω–∏–∏ –ø—Ä–∏–µ–º–∞.
+		USART1->ICR |= USART_ICR_RTOCF; //–°–±—Ä–æ—Å —Ñ–ª–∞–≥–∞ –ø—Ä–µ—Ä—ã–≤–∞–Ω–∏—è –ø–æ –ø—Ä–æ—Å—Ç–æ—é –ª–∏–Ω–∏–∏ –ø—Ä–∏–µ–º–∞.
+		USART1->CR1 &= ~USART_CR1_RTOIE; //–û—Ç–∫–ª—é—á–∞–µ–º –ø—Ä–µ—Ä—ã–≤–∞–Ω–∏–µ –ø–æ –ø—Ä–æ—Å—Ç–æ—é, —á—Ç–æ–±—ã –æ–Ω–æ –Ω–µ –º–µ—à–∞–ª–æ.
+		transmission_end = 1;		//–ü–µ—Ä–µ–º–µ–Ω–Ω–∞—è –∏–Ω–∏—Ü–∏–∞–ª–∏–∑–∏—Ä—É–µ—Ç—Å—è —ç—Ç–æ —Ä–∞–±–æ—Ç–∞–µ—Ç.
 	}
 }
-

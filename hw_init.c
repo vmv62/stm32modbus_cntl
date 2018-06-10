@@ -1,3 +1,18 @@
+void hdw_init(){
+
+//ADC config
+//      RCC->APB2ENR |= RCC_APB2ENR_ADC1EN; //Enable clock to ADC
+        RCC->APB2ENR |= RCC_APB2ENR_USART1EN; //Enable clock to Usart
+        RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
+        RCC->AHBENR |= RCC_AHBENR_DMA1EN;
+//      while(!(ADC1->ISR && ADC_ISR_ADRDY)){} //wait while ADC calibrate
+        asm("CPSIE i");				//Включение глобальных прерываний.
+        NVIC->ISER |= 1<<USART1_IRQn;		//Включение прерываний от УСАРТА.
+}
+
+
+
+
 void dma_usart_config(uint8_t *buffer, uint16_t buffer_len){
 	//GPIO config
 	GPIOA->MODER |= GPIO_MODER_MODER9_1 | GPIO_MODER_MODER10_1;  			//Назначение альтернативных функций для выводов (переназначение)
@@ -20,4 +35,14 @@ void dma_usart_config(uint8_t *buffer, uint16_t buffer_len){
 	DMA1_Channel3->CNDTR = buffer_len;				//Колличество сохраняемых данных
 	DMA1_Channel3->CCR |=  DMA_CCR_MINC;	//Включение инкрементирования адреса памяти
 	DMA1_Channel3->CCR |= DMA_CCR_EN;		//Включаем канал ДМА.
+}
+
+
+void dma_start_transsmit(uint8_t *buffer, uint16_t buffer_len){
+        if(DMA1->ISR && DMA_ISR_TCIF2 ){
+                DMA1->IFCR |= DMA_IFCR_CGIF2;
+                DMA1_Channel2->CCR &= ~DMA_CCR_EN;
+                DMA1_Channel2->CNDTR = buffer_len;
+        }
+        DMA1_Channel2->CCR |= DMA_CCR_EN; 
 }
