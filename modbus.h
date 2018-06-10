@@ -1,6 +1,7 @@
 #define TRUE 1
 #define FALSE 0
 #define FLASH_START 0x08000000
+#define MAX_PDU_SIZE	256
 
 //Контрольные флаги(настройки)
 #define COILS_HDW	((uint16_t)0x0001)
@@ -56,7 +57,7 @@ static typedef struct{
 typedef struct{
 	uint8_t slave_addres;
 	uint8_t command;
-	uint8_t body[500];
+	uint8_t body[MAX_PDU_SIZE];
 }PDU_TypeDef;
 
 uint16_t regs_filling(RegsTable_TypeDef *REGS);
