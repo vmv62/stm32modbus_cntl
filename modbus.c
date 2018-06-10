@@ -45,6 +45,9 @@ uint16_t regs_filling(RegsTable_TypeDef *REGS){
 //--------------Чтение выходов.----------------------------------
 
 uint16_t read_coils(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num){
+
+	uint8_t byte_count = 3;
+
 //Если адрес плюс число флагов больше чем размер регистра, то выдаем ошибку
 	if((adress + num) > sizeof(REGS->COILS)){
 		return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
@@ -54,9 +57,13 @@ uint16_t read_coils(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, 
 	if(num > sizeof(uint8_t)){			//Если количество катушек не умещается в один байт 
 		PDU->body[0] = REG_TMP >> sizeof(uint8_t); //Заполняем старший байт.
 		PDU->body[1] = (uint8_t)REG_TMP;		//Заполняем младший байт.
+		byte_count +=2;
+	}else{
+		PDU->body[0] = (uint8_t)REG_TMP;	//Если все помещается в один байт.
+		byte_count +=1;
 	}
-	PDU->body[0] = (uint8_t)REG_TMP;	//Если все помещается в один байт.
 //Теперь считаем контрольную сумму.
+	uint16_t CRC16 = crc16(PDU, byte_count);
 }
 
 
