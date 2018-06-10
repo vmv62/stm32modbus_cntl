@@ -33,11 +33,16 @@ enum {
     MODBUS_EXCEPTION_MAX
 };
 
+//Наполнение таблицы. часть касаемая содержания регистров хранения.
+static typedef struct{
+	uint16_t cntl_flags;
+}HoldingRegs_TypeDef;
+
 //Таблица регистров контроллера
 static typedef struct{
 	uint16_t coil;
 	uint16_t inputs;
-	uint16_t holding_reg[5];
+	HoldingRegs_TypeDef holding_regs;
 	uint16_t input_reg[5];
 }Regs_TypeDef;
 
@@ -48,6 +53,7 @@ typedef struct{
 	uint8_t body[500];
 }PDU_TypeDef;
 
-void regs_filling(Regs_TypeDef *reg_t);
+void regs_filling(uint32_t *coil_adr);
+void read_coils(Regs_TypeDef *reg_t);
 uint16_t read_input_registers(uint16_t reg_addr, uint16_t count, uint16_t *dest);
 uint16_t read_holding_registers(uint16_t reg_addr, uint16_t count, uint16_t *dest);
