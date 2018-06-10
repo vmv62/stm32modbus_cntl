@@ -2,6 +2,11 @@
 #define FALSE 0
 #define FLASH_START 0x08000000
 
+//Контрольные флаги(настройки)
+#define COILS_HDW	((uint16_t)0x0001)
+#define INPUTS_HDW	((uint16_t)0x0002)
+
+
 typedef unsigned int uint32_t;
 typedef unsigned short uint16_t;
 typedef unsigned char uint8_t;
@@ -35,16 +40,17 @@ enum {
 
 //Наполнение таблицы. часть касаемая содержания регистров хранения.
 static typedef struct{
-	uint16_t cntl_flags;
+	uint16_t CONT_FLAG;
+	uint16_t VAR_COIL;
 }HoldingRegs_TypeDef;
 
 //Таблица регистров контроллера
 static typedef struct{
-	uint16_t coil;
-	uint16_t inputs;
-	HoldingRegs_TypeDef holding_regs;
-	uint16_t input_reg[5];
-}Regs_TypeDef;
+	uint16_t COILS;
+	uint16_t INPUTS;
+	HoldingRegs_TypeDef HOLD;
+	uint16_t INP_REG[5];
+}RegsTable_TypeDef;
 
 //Структура сообщения протокола.
 typedef struct{
@@ -53,7 +59,7 @@ typedef struct{
 	uint8_t body[500];
 }PDU_TypeDef;
 
-void regs_filling(uint32_t *coil_adr);
-void read_coils(Regs_TypeDef *reg_t);
-uint16_t read_input_registers(uint16_t reg_addr, uint16_t count, uint16_t *dest);
-uint16_t read_holding_registers(uint16_t reg_addr, uint16_t count, uint16_t *dest);
+uint16_t regs_filling(RegsTable_TypeDef *REGS);
+uint16_t read_coils(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);
+uint16_t read_input_registers(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);
+uint16_t read_holding_registers(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);

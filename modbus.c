@@ -16,14 +16,50 @@
 
 */
 
-void regs_filling(Regs_TypeDef *reg_t){
-	ret_t->coils |= *coil_adr;		//Записываем в регистр состояние выходов, если входа виртуальные, пишем через функци.(GPIOA->IDR)
-	reg_t->inputs |= *input_adr;		//Записываем состояние входов (для порта контроллера PIOA->ODR);
+//Функция заполнения таблицы
+uint16_t regs_filling(RegsTable_TypeDef *REGS){
+
+// Заполняем значение выходов
+	if(REGS->HOLD.CONT_FLAG & COILS_HDW){
+		REGC->COILS = ((uint16_t)GPIOA_ODR);		//Записываем в регистр состояние выходов, если выхода виртуальные пишем через функции.
+	}else{
+//		REGC->COIL = 	функция чтения расширителя портов или какой-нибудь другой переферии
+	}
+
+// Заполняем значение входов
+	if(REGS.HOLD->CONT_FLAG & INPUTS_HDW){
+		REGC->COIL = ((uint16_t)GPIOA_IDR);		//Записываем в регистр состояние входов, если входа виртуальные, пишем через функци.(GPIOA->IDR)
+	}else{
+//		REGC->COIL = 	функция чтения расширителя портов или какой-нибудь другой переферии
+	}
+
+	INP_REG[0] = 0x10;
+	INP_REG[1] = 0x20;
+	INP_REG[2] = 0x30;
+	INP_REG[3] = 0x40;
+	INP_REG[4] = 0x50;
+
+//Остальные регистры холдинг рег хранящие настройка читать с флэш. Записывать только после соответствующей команды 
 }
 
-void read_coils(uint32_t *coil_adr){
-	
+//--------------Чтение выходов.----------------------------------
+
+uint16_t read_coils(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num){
+//Если адрес плюс число флагов больше чем размер регистра, то выдаем ошибку
+	if((adress + num) > sizeof(REGS->COILS)){
+		return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
+	}
+//Иначе читаем данные по адресу регистра и сдвигаем влево до адреса начала чтения.
+	uint16_t REG_TMP = REGS->COILS >> adress;
+	if(num > sizeof(uint8_t)){			//Если количество катушек не умещается в один байт 
+		PDU->body[0] = REG_TMP >> sizeof(uint8_t); //Заполняем старший байт.
+		PDU->body[1] = (uint8_t)REG_TMP;		//Заполняем младший байт.
+	}
+	PDU->body[0] = (uint8_t)REG_TMP;	//Если все помещается в один байт.
+//Теперь считаем контрольную сумму.
 }
+
+
 
 uint16_t read_holding_registers(uint16_t reg_addr, uint16_t count, uint16_t *dest){
 	uint32_t *contrl_addr;
