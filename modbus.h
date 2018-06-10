@@ -60,6 +60,7 @@ typedef struct{
 	uint8_t body[MAX_PDU_SIZE];
 }PDU_TypeDef;
 
+uint16_t pase_pdu(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS);
 uint16_t regs_filling(RegsTable_TypeDef *REGS);
 uint16_t read_coils(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);
 uint16_t read_input_registers(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);
