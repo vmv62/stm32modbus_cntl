@@ -6,20 +6,18 @@ typedef unsigned int uint32_t;
 typedef unsigned short uint16_t;
 typedef unsigned char uint8_t;
 
-uint8_t byte_count;
-uint8_t transmission_end;
 
-//Номера команд
+//РљРѕРјР°РЅРґС‹ РїСЂРѕС‚РѕРєРѕР»Р°
 enum{
-	READ_COIL_STATUS = 0x01,	//Чтение флагов (один бит)
-	READ_DESCRET_INPUTS,		//Чтение регистров входов (один бит)
-	READ_HOLDING_REGISTERS,		//Чтение регистров хранения (настройки) (16 бит)
-	READ_INPUT_REGISTERS,		//Чтение входных регистров(например значения датчик) (16 бит)
-	FORCE_SINGLE_COIL,			//Запись значения одного флага
-	PRESET_SINGLE_REGISTER,		//Запись в регистр хранения
+	READ_COIL_STATUS = 0x01,	//С‡С‚РµРЅРёРµ Р±РёС‚РѕРІ СЂРµРіРёСЃС‚СЂРѕРІ РІС‹С…РѕРґРѕРІ.
+	READ_DESCRET_INPUTS,		//С‡С‚РµРЅРёРµ Р±РёС‚РѕРІ СЂРµРіРёСЃС‚СЂРѕРІ РІС…РѕРґРѕРІ.
+	READ_HOLDING_REGISTERS,		//С‡С‚РµРЅРёРµ СЂРµРіРёСЃС‚СЂРѕРІ С…Р°СЂРЅРµРЅРёСЏ (РЅР°СЃС‚СЂРѕР№РєРё) 16 Р±РёС‚
+	READ_INPUT_REGISTERS,		//С‡С‚РµРЅРёРµ СЂР°РіРёСЃС‚СЂРѕРІ 16 Р±РёС‚ (РїРѕРєР°Р·Р°РЅРёСЏ СЂР°Р·РЅС‹С… РґР°С‚С‡РёРєРѕРІ)
+	FORCE_SINGLE_COIL,			//РЈСЃС‚Р°РЅРѕРІРєР° Р±РёС‚ РІС‹С…РѕРґРѕРІ
+	PRESET_SINGLE_REGISTER,		//Р·Р°РїРёСЃСЊ РІ СЂРµРіРёСЃС‚СЂС‹ РЅР°СЃС‚СЂРѕРµРє.
 };
 
-//Ошибки
+//РћС€РёР±РєРё РїСЂРѕС‚РѕРєРѕР»Р°
 enum {
     MODBUS_EXCEPTION_ILLEGAL_FUNCTION = 0x01,
     MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS,
@@ -35,11 +33,21 @@ enum {
     MODBUS_EXCEPTION_MAX
 };
 
+//РўР°Р±Р»РёС†Р° СЂРµРіРёСЃС‚СЂРѕРІ РєРѕРЅС‚СЂРѕР»Р»РµСЂР°
+static typedef struct{
+	uint16_t coil;
+	uint16_t inputs;
+	uint16_t holding_reg[5];
+	uint16_t input_reg[5];
+}Regs_TypeDef;
+
+//РЎС‚СЂСѓРєС‚СѓСЂР° СЃРѕРѕР±С‰РµРЅРёСЏ РїСЂРѕС‚РѕРєРѕР»Р°.
 typedef struct{
 	uint8_t slave_addres;
 	uint8_t command;
 	uint8_t body[500];
 }PDU_TypeDef;
 
+void regs_filling(Regs_TypeDef *reg_t);
 uint16_t read_input_registers(uint16_t reg_addr, uint16_t count, uint16_t *dest);
 uint16_t read_holding_registers(uint16_t reg_addr, uint16_t count, uint16_t *dest);
