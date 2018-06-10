@@ -17,8 +17,8 @@
 */
 
 //Функция заполнения таблицы
-uint16_t regs_filling(RegsTable_TypeDef *REGS){
-
+uint16_t regs_filling(RegsTable_TypeDef *REGS)
+{
 // Заполняем значение выходов
 	if(REGS->HOLD.CONT_FLAG & COILS_HDW){
 		REGC->COILS = ((uint16_t)GPIOA_ODR);		//Записываем в регистр состояние выходов, если выхода виртуальные пишем через функции.
@@ -44,7 +44,8 @@ uint16_t regs_filling(RegsTable_TypeDef *REGS){
 
 //--------------Чтение выходов.----------------------------------
 
-uint16_t read_coils(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num){
+uint16_t read_coils(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num)
+{
 
 	uint8_t byte_count = 3;
 
@@ -68,7 +69,8 @@ uint16_t read_coils(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, 
 
 
 
-uint16_t read_holding_registers(uint16_t reg_addr, uint16_t count, uint16_t *dest){
+uint16_t read_holding_registers(uint16_t reg_addr, uint16_t count, uint16_t *dest)
+{
 	uint32_t *contrl_addr;
 
 	contrl_addr = FLASH_START + reg_addr;
