@@ -51,10 +51,10 @@ int main(void)
 void USART1_IRQHandler(void){
 	if(!(USART1->ISR & USART_ISR_RXNE) & (USART1->ISR & USRT_ISR_IDLE)) //Если условие выполнено то приемный буфер пуст и линия в простое.
 	{
-		//Сбрасываем флаг холостой линии.
+		USART1->ICR &= ~USART_ICR_IDLECF; 	//Сбрасываем флаг холостой линии.
 		Serv.end_transmission = 1;		//Ставим флаг окончания приема пакета.
 		Serv.byte_count = DMA1_Channel3->CNDTR  //Считываем колличество непринятых байт для вычисления принятых.
-		//Перезаписываем счетчик байтов ДМА канала.
+		DMA1_Channel3->CNDTR = 256; 		//Перезаписываем счетчик байтов ДМА канала.
 	}
 }
 
