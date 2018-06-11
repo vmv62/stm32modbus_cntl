@@ -16,6 +16,18 @@
 
 */
 
+int parse_buffer(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS)
+{
+	if(PDU->slave_addres != 25){
+		return 0;
+	}
+	switch(PDU->command){
+		case READ_COIL_STATUS:	read_coils(PDU, REGS, PDU->body[0], PDU->body[1]);
+					break;
+	}
+}
+
+
 //Функция заполнения таблицы
 uint16_t regs_filling(RegsTable_TypeDef *REGS)
 {
