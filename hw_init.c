@@ -31,14 +31,14 @@ void dma_usart_config(uint8_t *buffer, uint16_t buffer_len){
 	DMA1_Channel2->CMAR = (uint32_t)buffer;		//Адрес буфера для чтения передаваемых данных
 	DMA1_Channel2->CNDTR = buffer_len;				//Колличество передаваемых данных
 	DMA1_Channel2->CCR |= DMA_CCR_DIR | DMA_CCR_MINC;// DMA_CCR_TEIE | DMA_CCR_TCIE;	//Настройка канала ДМА(прерывания, направление передачи итд)
-/*
- * Отключил ДМА потому что нет возможности определить начало передачи и холостой ход линии.
+
+ // Включено после решения опять использовать ДМА.
 	DMA1_Channel3->CPAR = (uint32_t)(&(USART1->RDR)); 	//Канал 3 для приема данных (адрес переферии)
 	DMA1_Channel3->CMAR = (uint32_t)(buffer);			//Буфер для сохранения данных
 	DMA1_Channel3->CNDTR = buffer_len;				//Колличество сохраняемых данных
 	DMA1_Channel3->CCR |=  DMA_CCR_MINC;	//Включение инкрементирования адреса памяти
 	DMA1_Channel3->CCR |= DMA_CCR_EN;		//Включаем канал ДМА.
-*/
+
 }
 
 
