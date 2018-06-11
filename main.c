@@ -12,6 +12,8 @@ void dma_usart_config(uint8_t *buffer, uint16_t buffer_len);
 static struct {
 	uint8_t end_transmission;
 	uint32_t byte_count;
+	uint32_t max_size_pdu;
+	uint32_t current_size_pdu;
 }Serv;
 
 //Объявляем структуры таблицы регистров и структуры ПДУ.
@@ -25,6 +27,7 @@ int main(void)
 	//Инициализируем члены сервисной структуры.
 	Serv.byte_count = 0;	//Считаем принятые байты
 	Serv.end_transmission = 0; //Флаг конца приема ПДУ.
+	max_size_pdu = sizeof(PDU_TypeDef); 
 	hdw_init();			//Инициализация переферии.
 	dma_usart_config(&PDU, sizeof(PDU));
     while(1)
@@ -54,6 +57,7 @@ void USART1_IRQHandler(void){
 		USART1->ICR &= ~USART_ICR_IDLECF; 	//Сбрасываем флаг холостой линии.
 		Serv.end_transmission = 1;		//Ставим флаг окончания приема пакета.
 		Serv.byte_count = DMA1_Channel3->CNDTR  //Считываем колличество непринятых байт для вычисления принятых.
+		Serv.current_size_pdu = Serv.max_size-pdu - DMA1_Channel3->CNDTR;	//Вычисляем колличество принятых байт.
 		DMA1_Channel3->CNDTR = 256; 		//Перезаписываем счетчик байтов ДМА канала.
 	}
 }
