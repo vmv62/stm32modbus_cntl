@@ -1,7 +1,7 @@
 #define TRUE 1
 #define FALSE 0
 #define FLASH_START 0x08000000
-#define MAX_PDU_SIZE	256
+#define MAX_PDU_SIZE	254
 
 //Контрольные флаги(настройки)
 #define COILS_HDW	((uint16_t)0x0001)
@@ -38,6 +38,8 @@ enum {
     MODBUS_EXCEPTION_GATEWAY_TARGET,
     MODBUS_EXCEPTION_MAX
 };
+
+uint8_t BUFFER[256];
 
 //Наполнение таблицы. часть касаемая содержания регистров хранения.
 typedef struct{

@@ -16,6 +16,13 @@
 
 */
 
+uint16_t pase_pdu(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS){
+	switch(PDU->command){
+		case READ_COIL_STATUS:	read_coils(PDU, REGS, PDU->body[0],PDU->body[1]);
+								break;
+	}
+}
+
 //Р¤СѓРЅРєС†РёСЏ Р·Р°РїРѕР»РЅРµРЅРёСЏ С‚Р°Р±Р»РёС†С‹
 uint16_t regs_filling(RegsTable_TypeDef *REGS)
 {
