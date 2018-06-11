@@ -23,7 +23,7 @@ void dma_usart_config(uint8_t *buffer, uint16_t buffer_len){
 	USART1->BRR = 0x0341;	//скорость работы усарта (8000000/9600)
 	USART1->CR1 |= USART_CR1_TE | USART_CR1_RE | USART_CR1_UE | USART_CR1_RXNEIE | USART_CR1_IDLEIE;  //Transmit enable, recive enable, usart enable
 	//USART1->RTOR = 10;	//Длительность изсерения простоя линии приемника перед генерацией прерывания
-	USART1->CR3 |= USART_CR3_DMAT; 			//Включение ДМА на прием и передачу от усарта
+	USART1->CR3 |= USART_CR3_DMAT | USART_CR3_DMAR; 			//Включение ДМА на прием и передачу от усарта
 
 
 	//DMA config
