@@ -11,6 +11,7 @@ void dma_usart_config(uint8_t *buffer, uint16_t buffer_len);
 //Структура для хранения сервиных регистров.
 static struct {
 	uint8_t end_transmission;
+	uint8_t idle_simbol_count;
 	uint32_t byte_count;
 	uint32_t max_size_pdu;
 	uint32_t current_size_pdu;
@@ -27,7 +28,7 @@ int main(void)
 	//Инициализируем члены сервисной структуры.
 	Serv.byte_count = 0;	//Считаем принятые байты
 	Serv.end_transmission = 0; //Флаг конца приема ПДУ.
-	max_size_pdu = sizeof(PDU_TypeDef); 
+	Serv.max_size_pdu = sizeof(PDU_TypeDef);
 	hdw_init();			//Инициализация переферии.
 	dma_usart_config(&PDU, sizeof(PDU));
     while(1)
@@ -52,29 +53,23 @@ int main(void)
 //Ошибка переполнения происходит когда не сборшен флаг USART_ISR_RXNE и происходит прием следующего бита.
 
 void USART1_IRQHandler(void){
-	if(!(USART1->ISR & USART_ISR_RXNE) & (USART1->ISR & USRT_ISR_IDLE)) //Если условие выполнено то приемный буфер пуст и линия в простое.
+	if(USART1->ISR & USART_ISR_RXNE)					//(USART1->ISR & USART_ISR_RTOF)
 	{
-		USART1->ICR &= ~USART_ICR_IDLECF; 	//Сбрасываем флаг холостой линии.
-		Serv.end_transmission = 1;		//Ставим флаг окончания приема пакета.
-		Serv.byte_count = DMA1_Channel3->CNDTR  //Считываем колличество непринятых байт для вычисления принятых.
-		Serv.current_size_pdu = Serv.max_size-pdu - DMA1_Channel3->CNDTR;	//Вычисляем колличество принятых байт.
-		DMA1_Channel3->CNDTR = 256; 		//Перезаписываем счетчик байтов ДМА канала.
+		USART1->CR1 &= ~USART_CR1_RXNEIE;
+		DMA1_Channel3->CPAR = (uint32_t)(&(USART1->RDR));
+		DMA1_Channel3->CMAR = (uint32_t)(&PDU);
+		DMA1_Channel3->CNDTR = 256;
+		DMA1_Channel3->CCR |= DMA_CCR_EN;
+		USART1->RTOR = 0x6;
+		USART1->ICR |= USART_ICR_RTOCF;
+		USART1->CR1 |= USART_CR1_RTOIE;
+	}
+
+	if(USART1->ISR & USART_ISR_RTOF)
+	{
+		USART1->CR1 |= USART_CR1_RXNEIE;
+		DMA1_Channel3->CCR &= ~DMA_CCR_EN;
+		USART1->CR1 &= ~USART_CR1_RTOIE;
+		Serv.end_transmission = 1;
 	}
 }
-
-//Старая функция обработчика прерывания.
-/*
-	if(USART1->ISR & USART_ISR_RXNE){	//Прерывание "регистр приема не пуст"
-		BUFFER[Serv.byte_count] = (uint8_t)(USART1->RDR);
-		USART1->CR1 |= USART_CR2_RTOEN;
-		USART1->CR1 |= USART_CR1_RTOIE;	//Включение прерывания по простою линии приема.
-		Serv.byte_count++;			//Почему то не инкрементируется? Видимо переменная не видна.
-	}
-	if(USART1->ISR & USART_ISR_RTOF){	//Прерывание по простою линии приема
-		USART1->CR1 &= ~USART_CR1_RTOIE;
-		USART1->ICR |= USART_ICR_RTOCF; //Сброс флага прерывания по простою линии приема.
-//		USART1->CR1 &= ~USART_CR1_RTOIE; //Отключаем прерывание по простою, чтобы оно не мешало.
-//		USART1->RQR &= ~USART_RQR_RXFRQ;
-		Serv.end_transmission = 1;		//Переменная инициализируется это работает.
-	}
-*/
