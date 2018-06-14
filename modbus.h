@@ -59,9 +59,11 @@ typedef struct{
 typedef struct{
 	uint8_t slave_addres;
 	uint8_t command;
-	uint16_t reg_adr;
-	uint16_t reg;
-	uint16_t body[MAX_PDU_SIZE];
+	uint8_t RA_HI;
+	uint8_t RA_LO;
+	uint8_t DB_HI;
+	uint8_t DB_LO;
+	uint8_t body[MAX_PDU_SIZE];
 }PDU_TypeDef;
 
 uint16_t pase_pdu(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS);
