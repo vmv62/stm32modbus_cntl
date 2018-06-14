@@ -33,12 +33,14 @@ int main(void)
 	dma_usart_config(&PDU, sizeof(PDU));
     while(1)
     {
+    	regs_filling(&REGS);
     	//Обработчик состояния выставленного флага конца передачи.
     	if(Serv.end_transmission){
     		Serv.end_transmission = 0;
     		pase_pdu(&PDU, &REGS);
-    		dma_start_transsmit(&PDU, sizeof(PDU));
+  //  		dma_start_transsmit(&PDU, sizeof(PDU));
     	}
+    	asm("CPSIE i");
     	regs_filling(&REGS);
     }
 }
@@ -72,5 +74,6 @@ void USART1_IRQHandler(void){
 		DMA1_Channel3->CCR &= ~DMA_CCR_EN;
 		USART1->CR1 &= ~USART_CR1_RTOIE;
 		Serv.end_transmission = 1;
+		asm("CPSID i");
 	}
 }

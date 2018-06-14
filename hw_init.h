@@ -1,5 +1,9 @@
 #include "stm32f0xx.h"
 
+//#define __interrupt_enable()	(asm("CPSIE i"))
+//#define __interrupt_disable()	(asm("CPSID i"))
+
+
 typedef unsigned int uint32_t;
 typedef unsigned short uint16_t;
 typedef unsigned char uint8_t;

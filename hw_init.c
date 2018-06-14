@@ -9,6 +9,7 @@ void hdw_init(){
         RCC->AHBENR |= RCC_AHBENR_DMA1EN;
 //      while(!(ADC1->ISR && ADC_ISR_ADRDY)){} //wait while ADC calibrate
         asm("CPSIE i");				//Включение глобальных прерываний.
+ //       __interrupt_enable();
         NVIC->ISER |= 1<<USART1_IRQn;		//Включение прерываний от УСАРТА.
 }
 

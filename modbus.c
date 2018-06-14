@@ -4,8 +4,19 @@
 
 
 uint16_t pase_pdu(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS){
+	uint16_t crc;
+	if(PDU->slave_addres != MDB_ADDR)
+	{
+		return MODBUS_ILLEGAL_SLAVE_ADDR;
+	}
+
+//	crc = (body[0] << 8) & body[1];
+//	if(body & crc16(PDU->command)){
+//		while(1);
+//	}
+
 	switch(PDU->command){
-		case READ_COIL_STATUS:	read_coils(PDU, REGS, PDU->body[0],PDU->body[1]);
+		case READ_COIL_STATUS:	dma_start_transsmit(&PDU, read_coils(PDU, REGS, ((PDU->RA_HI << 8) | PDU->RA_LO), ((PDU->DB_HI << 8) | PDU->DB_LO)));
 								break;
 	}
 }
@@ -22,9 +33,9 @@ uint16_t regs_filling(RegsTable_TypeDef *REGS)
 
 // Аналогично записи выше, только заполлняем регистры входов.
 	if(REGS->HOLD.CONT_FLAG & INPUTS_HDW){
-		REGS->COILS = ((uint16_t)GPIOA->IDR);	
+		REGS->COILS |= ((uint16_t)GPIOA->IDR);
 	}else{
-//		REGC->COIL = 
+		REGS->COILS = 0xAE41;
 	}
 
 //Заполняем регистры содержащие 16 битные данные для теста.
@@ -42,25 +53,26 @@ uint16_t regs_filling(RegsTable_TypeDef *REGS)
 uint16_t read_coils(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num)
 {
 
-	uint8_t byte_count = 3;
-
+	uint8_t byte_count = 2;
+	uint16_t CRC16 = crc16((uint8_t *)PDU, (uint32_t)byte_count);
 //Еслм сумма адрес плюс количество превышают колличество регистров, выдаем ошибку.
-	if((adress + num) > sizeof(REGS->COILS)){
+	if((adress + num) > 8*sizeof(REGS->COILS)){
 		return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
 	}
 //Непосредственно читаем заполняем тело ответа
 	uint16_t REG_TMP = REGS->COILS >> adress;
-	if(num > sizeof(uint8_t)){			//если число запрошенных данных превышает размер в восемь бит
-		PDU->body[0] = REG_TMP >> sizeof(uint8_t); //Разбиваем регистр на два бита
-		PDU->body[1] = (uint8_t)REG_TMP;		
+	if(num > 8*sizeof(uint8_t)){			//если число запрошенных данных превышает размер в восемь бит
+		PDU->RA_HI = REG_TMP >> 8*sizeof(uint8_t); //Разбиваем регистр на два бита
+		PDU->RA_LO = (uint8_t)REG_TMP;
 		byte_count +=2;
 	}else{
-		PDU->body[0] = (uint8_t)REG_TMP;	//Если меньше, пишем один.
+		PDU->RA_HI = (uint8_t)REG_TMP;	//Если меньше, пишем один.
 		byte_count +=1;
 	}
-//передаем на подсчет контрольной суммы.
-	uint16_t CRC16 = crc16((uint8_t *)PDU, (uint32_t)byte_count);
-	return CRC16;
+	PDU->DB_HI = CRC16 >> 8;
+	PDU->DB_LO = CRC16;
+	byte_count += 2;
+	return byte_count;
 }
 
 
