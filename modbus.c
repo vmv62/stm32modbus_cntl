@@ -16,9 +16,10 @@ uint16_t pase_pdu(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS){
 //	}
 
 	switch(PDU->command){
-		case READ_COIL_STATUS:	dma_start_transsmit(&PDU, read_coils(PDU, REGS, ((PDU->RA_HI << 8) | PDU->RA_LO), ((PDU->DB_HI << 8) | PDU->DB_LO)));
+		case READ_COIL_STATUS:	read_coils(PDU, REGS, ((PDU->RA_HI << 8) | PDU->RA_LO), ((PDU->DB_HI << 8) | PDU->DB_LO));
 								break;
 	}
+	return 0;
 }
 
 //Заполнение таблицы данных которая хранит регистры устройства.
@@ -52,26 +53,30 @@ uint16_t regs_filling(RegsTable_TypeDef *REGS)
 
 uint16_t read_coils(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num)
 {
-
+	PDU_01_TypeDef *ANSV = PDU;
 	uint8_t byte_count = 2;
-	uint16_t CRC16 = crc16((uint8_t *)PDU, (uint32_t)byte_count);
+	uint16_t tm_crc = crc16((uint8_t)(&PDU->command), 4);
+	uint8_t tm_hi = tm_crc >> 8;
+	uint8_t tm_lo = tm_crc;
+
 //Еслм сумма адрес плюс количество превышают колличество регистров, выдаем ошибку.
 	if((adress + num) > 8*sizeof(REGS->COILS)){
 		return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
 	}
 //Непосредственно читаем заполняем тело ответа
 	uint16_t REG_TMP = REGS->COILS >> adress;
-	if(num > 8*sizeof(uint8_t)){			//если число запрошенных данных превышает размер в восемь бит
-		PDU->RA_HI = REG_TMP >> 8*sizeof(uint8_t); //Разбиваем регистр на два бита
-		PDU->RA_LO = (uint8_t)REG_TMP;
-		byte_count +=2;
-	}else{
-		PDU->RA_HI = (uint8_t)REG_TMP;	//Если меньше, пишем один.
-		byte_count +=1;
-	}
-	PDU->DB_HI = CRC16 >> 8;
-	PDU->DB_LO = CRC16;
+
+	ANSV->data[0]= (REG_TMP >> 8);
+	ANSV->data[1] = (uint8_t)REG_TMP;
+	byte_count +=2;
+
+	uint16_t CRC16 = crc16(&ANSV->slave_addres, (uint32_t)byte_count);
+
+	ANSV->data[2] = CRC16;
+	ANSV->data[3] = (CRC16 >> 8);
 	byte_count += 2;
+	ANSV->count = byte_count;
+	dma_start_transsmit((uint32_t)(&(PDU)), (uint16_t)byte_count);
 	return byte_count;
 }
 
@@ -152,5 +157,6 @@ uint16_t crc16(uint8_t *adr_buffer, uint32_t byte_cnt)
         uchCRCHi = uchCRCLo ^ auchCRCHi[uIndex];
         uchCRCLo = auchCRCLo[uIndex];
     }
-return (uchCRCHi << 8 | uchCRCLo);
+//return (uchCRCHi << 8 | uchCRCLo);
+    return (uchCRCHi << 8 | uchCRCLo);
 }
