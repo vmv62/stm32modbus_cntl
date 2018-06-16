@@ -67,26 +67,4 @@ void USART1_IRQHandler(void){
 	}
 }
 
-/*
- * 	{
-		USART1->CR1 &= ~USART_CR1_RXNEIE;	//Отключаем прерывание по приему байта.
-		DMA1_Channel3->CPAR = (uint32_t)(&(USART1->RDR));	//Настройка прараметров ДМА. Пишем адрем регистра свигового регистра
-		DMA1_Channel3->CMAR = (uint32_t)(&PDU);				//Адрес передаваемых данных
-		DMA1_Channel3->CNDTR = 256;				//Длинна передаваемых данных
-		DMA1_Channel3->CCR |= DMA_CCR_EN;		//Включаем канал ДМА
-		USART1->RTOR = 0x6;					//Время до наступления прерывания при простое линии
-		USART1->ICR |= USART_ICR_RTOCF;	//Очистка флага прерывания по простою приемника
-		USART1->CR1 |= USART_CR1_RTOIE;	//Включение прерывания по паузе  приема
-	}
-
-	if(USART1->ISR & USART_ISR_RTOF)
-	{
-		USART1->ICR |= USART_ICR_RTOCF;	//Очистка флага по прерыванию простоя линии
-		USART1->CR1 |= USART_CR1_RXNEIE;	//включение прерывания по приему байта.
-		DMA1_Channel3->CCR &= ~DMA_CCR_EN;	//Отключаем канал приема дма
-		USART1->CR1 &= ~USART_CR1_RTOIE;	//Отключаем прерывание паузы приема
-		Serv.end_transmission = 1;			//метка окончания приема сообщения
-		asm("CPSID i");
-	}
- * */
 
