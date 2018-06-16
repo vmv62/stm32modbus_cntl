@@ -28,14 +28,14 @@ enum{
 
 //Ошибки протокола
 enum {
-    MODBUS_EXCEPTION_ILLEGAL_FUNCTION = 0x01,
-    MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS,
-    MODBUS_EXCEPTION_ILLEGAL_DATA_VALUE,
-    MODBUS_EXCEPTION_SLAVE_OR_SERVER_FAILURE,
-    MODBUS_EXCEPTION_ACKNOWLEDGE,
-    MODBUS_EXCEPTION_SLAVE_OR_SERVER_BUSY,
-    MODBUS_EXCEPTION_NEGATIVE_ACKNOWLEDGE,
-    MODBUS_EXCEPTION_MEMORY_PARITY,
+    MODBUS_EXCEPTION_ILLEGAL_FUNCTION = 0x01,	//Принятый код функции не может быть обработан
+    MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS,		//Адрес данных, указанный в запросе, недоступен.
+    MODBUS_EXCEPTION_ILLEGAL_DATA_VALUE,		//Значение, содержащееся в поле данных запроса, является недопустимой величиной.
+    MODBUS_EXCEPTION_SLAVE_OR_SERVER_FAILURE,	//
+    MODBUS_EXCEPTION_ACKNOWLEDGE,				// Ведомое устройство приняло запрос и обрабатывает его, но это требует много времени. Этот ответ предохраняет ведущее устройство от генерации ошибки тайм-аута
+    MODBUS_EXCEPTION_SLAVE_OR_SERVER_BUSY,		//Ведомое устройство занято обработкой команды. Ведущее устройство должно повторить сообщение позже, когда ведомое освободится.
+    MODBUS_EXCEPTION_NEGATIVE_ACKNOWLEDGE,		//Ведомое устройство не может выполнить программную функцию, заданную в запросе. Этот код возвращается для неуспешного программного запроса, использующего функции с номерами 13 или 14. Ведущее устройство должно запросить диагностическую информацию или информацию об ошибках от ведомого.
+    MODBUS_EXCEPTION_MEMORY_PARITY,				//Ведомое устройство при чтении расширенной памяти обнаружило ошибку контроля четности.
     MODBUS_EXCEPTION_NOT_DEFINED,
     MODBUS_EXCEPTION_GATEWAY_PATH,
     MODBUS_EXCEPTION_GATEWAY_TARGET,
@@ -78,9 +78,10 @@ typedef struct{
 	uint16_t crc;
 }PDU_Query_TypeDef;
 
-uint16_t pase_pdu(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS);
+uint16_t pase_pdu(uint8_t *buffer, RegsTable_TypeDef *REGS);
 uint16_t regs_filling(RegsTable_TypeDef *REGS);
 uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);
 uint16_t read_input_registers(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);
 uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);
+uint8_t error_handler(uint8_t error, uint8_t *buffer);
 uint16_t crc16(uint8_t *adr_buffer, uint32_t byte_cnt);

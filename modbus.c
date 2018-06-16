@@ -3,8 +3,10 @@
 
 
 
-uint16_t pase_pdu(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS){
+uint16_t pase_pdu(uint8_t *buffer, RegsTable_TypeDef *REGS){
+	PDU_TypeDef *PDU = (PDU_TypeDef *)(buffer);
 	uint16_t crc;
+	uint8_t err_holder;
 	if(PDU->slave_addres != MDB_ADDR)
 	{
 		return MODBUS_ILLEGAL_SLAVE_ADDR;
@@ -16,8 +18,12 @@ uint16_t pase_pdu(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS){
 //	}
 
 	switch(PDU->command){
-		case READ_COIL_STATUS:	read_coils(PDU, REGS, ((PDU->RA_HI << 8) | PDU->RA_LO), ((PDU->DB_HI << 8) | PDU->DB_LO));
+		case READ_COIL_STATUS:	if(err_holder = read_coils(PDU, REGS, ((PDU->RA_HI << 8) | PDU->RA_LO), ((PDU->DB_HI << 8) | PDU->DB_LO)))
+								{
+										error_handler(err_holder, buffer);
+								}
 								break;
+		default:	error_handler(MODBUS_EXCEPTION_ILLEGAL_FUNCTION, buffer);
 	}
 	return 0;
 }
@@ -78,7 +84,7 @@ uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16_t adress, u
 	byte_count += 2;
 
 	dma_start_transsmit(buffer, 7);
-	return byte_count;
+	return 0;
 }
 
 
@@ -109,6 +115,19 @@ uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16
 	buffer[6] = CRC16 >> 8;
 
 	dma_start_transsmit(buffer, 7);
+	return 0;
+}
+
+uint8_t error_handler(uint8_t error, uint8_t *buffer)
+{
+	buffer[1] = 0x8F;
+	buffer[2] = error;
+
+	uint16_t CRC16 = crc16(buffer, 0x3);
+
+	buffer[3] = CRC16;
+	buffer[4] = CRC16 >> 8;
+	dma_start_transsmit(buffer, 5);
 	return 0;
 }
 
