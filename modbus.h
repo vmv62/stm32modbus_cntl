@@ -4,7 +4,8 @@
 #define MAX_PDU_SIZE	254
 #define MDB_ADDR		25
 #define PDU_HEAD_SIZE	3
-#define COIL_REG_SIZE	16
+#define COIL_REG_COUNT	16
+#define INP_REG_COUNT	5
 //Контрольные флаги(настройки)
 #define COILS_HDW	((uint16_t)0x0001)
 #define INPUTS_HDW	((uint16_t)0x0002)
@@ -56,7 +57,7 @@ typedef struct{
 	uint16_t COILS;
 	uint16_t INPUTS;
 	HoldingRegs_TypeDef HOLD;
-	uint16_t INP_REG[5];
+	uint32_t INP_REG[INP_REG_COUNT];
 }RegsTable_TypeDef;
 
 //Структура сообщения протокола.

@@ -5,8 +5,8 @@
 
 uint16_t pase_pdu(uint8_t *buffer, RegsTable_TypeDef *REGS){
 	PDU_TypeDef *PDU = (PDU_TypeDef *)(buffer);
-	uint16_t crc;
 	uint8_t err_holder;
+
 	if(PDU->slave_addres != MDB_ADDR)
 	{
 		return MODBUS_ILLEGAL_SLAVE_ADDR;
@@ -19,6 +19,11 @@ uint16_t pase_pdu(uint8_t *buffer, RegsTable_TypeDef *REGS){
 
 	switch(PDU->command){
 		case READ_COIL_STATUS:	if(err_holder = read_coils(PDU, REGS, ((PDU->RA_HI << 8) | PDU->RA_LO), ((PDU->DB_HI << 8) | PDU->DB_LO)))
+								{
+										error_handler(err_holder, buffer);
+								}
+								break;
+		case READ_HOLDING_REGISTERS:	if(err_holder = read_holding_registers(PDU, REGS, ((PDU->RA_HI << 8) | PDU->RA_LO), ((PDU->DB_HI << 8) | PDU->DB_LO)))
 								{
 										error_handler(err_holder, buffer);
 								}
@@ -67,7 +72,7 @@ uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16_t adress, u
 	}
 	uint16_t tmp = reg_swap(QueryPDU->reg_addr) + reg_swap(QueryPDU->reg_count);
 //Еслм сумма адрес плюс количество превышают колличество регистров, выдаем ошибку.
-	if((tmp) > COIL_REG_SIZE){
+	if((tmp) > COIL_REG_COUNT){
 		return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
 	}
 //Непосредственно читаем заполняем тело ответа
@@ -99,22 +104,24 @@ uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16
 		return 0;
 	}
 
+	uint16_t tmp = reg_swap(QueryPDU->reg_addr) + reg_swap(QueryPDU->reg_count);
 //Еслм сумма адрес плюс количество превышают колличество регистров, выдаем ошибку.
-	if((reg_swap(QueryPDU->reg_addr) + reg_swap(QueryPDU->reg_count)) > 8*sizeof(REGS->COILS)){
+	if((tmp) > INP_REG_COUNT){
 		return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
 	}
 //Непосредственно читаем заполняем тело ответа
-	uint16_t REG_TMP = REGS->COILS >> adress;
 	buffer[2] = 2;
-	buffer[3]= (REG_TMP >> 8);
-	buffer[4] = (uint8_t)REG_TMP;
+	buffer[3]= (uint8_t)(REGS->INP_REG[adress] >> 24);
+	buffer[4]= (uint8_t)(REGS->INP_REG[adress] >> 16);
+	buffer[5]= (uint8_t)(REGS->INP_REG[adress] >> 8);
+	buffer[6] = (uint8_t)REGS->INP_REG[adress];
 
-	uint16_t CRC16 = crc16(BUFFER, 0x5);
+	uint16_t CRC16 = crc16(BUFFER, 0x7);
 
-	buffer[5] = CRC16;
-	buffer[6] = CRC16 >> 8;
+	buffer[7] = CRC16;
+	buffer[8] = CRC16 >> 8;
 
-	dma_start_transsmit(buffer, 7);
+	dma_start_transsmit(buffer, 9);
 	return 0;
 }
 
