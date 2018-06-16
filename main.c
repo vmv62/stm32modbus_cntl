@@ -8,36 +8,30 @@ void dma_start_transsmit(uint8_t *buffer, uint16_t buffer_len);
 void dma_usart_config(uint8_t *buffer, uint16_t buffer_len);
 
 
-//Структура для хранения сервиных регистров.
-static struct {
-	uint8_t end_transmission;
-	uint8_t idle_simbol_count;
-	uint32_t byte_count;
-	uint32_t max_size_pdu;
-	uint32_t current_size_pdu;
-}Serv;
+
 
 //Объявляем структуры таблицы регистров и структуры ПДУ.
-PDU_TypeDef PDU;
 RegsTable_TypeDef REGS;
-
+HDWS_TypeDef HW;
+uint32_t cnt=0;
 
 
 int main(void)
 {
-	//Инициализируем члены сервисной структуры.
-	Serv.byte_count = 0;	//Считаем принятые байты
-	Serv.end_transmission = 0; //Флаг конца приема ПДУ.
-	Serv.max_size_pdu = sizeof(PDU_TypeDef);
+	//Инициализируем регистр флагов
+	HW.STATE = 0;
+
+
 	hdw_init();			//Инициализация переферии.
-	dma_usart_config(&PDU, sizeof(PDU));
-    while(1)
+	dma_usart_config(BUFFER, sizeof(BUFFER));
+
+	while(1)
     {
     	regs_filling(&REGS);
     	//Обработчик состояния выставленного флага конца передачи.
-    	if(Serv.end_transmission){
-    		Serv.end_transmission = 0;
-    		pase_pdu(&PDU, &REGS);
+    	if(HW.STATE & HDWSTATE_MRE){
+    		pase_pdu(BUFFER, &REGS);
+    		HW.STATE &= ~HDWSTATE_MRE;
   //  		dma_start_transsmit(&PDU, sizeof(PDU));
     	}
   //  	asm("CPSIE i");
@@ -57,6 +51,24 @@ int main(void)
 void USART1_IRQHandler(void){
 	if(USART1->ISR & USART_ISR_RXNE)					//(USART1->ISR & USART_ISR_RTOF)
 	{
+		BUFFER[HW.RECV_BYTE_CNT] = (uint8_t)USART1->RDR;
+		HW.RECV_BYTE_CNT++;
+		USART1->ICR |= USART_ICR_RTOCF;	//Очистка флага прерывания по простою приемника
+		USART1->RTOR = 0x3;					//Время до наступления прерывания при простое линии
+		USART1->CR2 |= USART_CR2_RTOEN;	//Включение прерывания по паузе  приема
+	}
+
+	if(USART1->ISR & USART_ISR_RTOF)
+	{
+//		USART1->ICR |= USART_ICR_RTOCF;	//Очистка флага по прерыванию простоя линии
+		USART1->CR2 &= ~USART_CR2_RTOEN;	//Отключаем прерывание паузы приема
+		HW.STATE |= HDWSTATE_MRE;
+        asm("CPSID i");
+	}
+}
+
+/*
+ * 	{
 		USART1->CR1 &= ~USART_CR1_RXNEIE;	//Отключаем прерывание по приему байта.
 		DMA1_Channel3->CPAR = (uint32_t)(&(USART1->RDR));	//Настройка прараметров ДМА. Пишем адрем регистра свигового регистра
 		DMA1_Channel3->CMAR = (uint32_t)(&PDU);				//Адрес передаваемых данных
@@ -76,4 +88,5 @@ void USART1_IRQHandler(void){
 		Serv.end_transmission = 1;			//метка окончания приема сообщения
 		asm("CPSID i");
 	}
-}
+ * */
+

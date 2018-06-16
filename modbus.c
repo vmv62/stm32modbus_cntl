@@ -43,7 +43,6 @@ uint16_t regs_filling(RegsTable_TypeDef *REGS)
 	REGS->INP_REG[0] = 0x10;
 	REGS->INP_REG[1] = 0x20;
 	REGS->INP_REG[2] = 0x30;
-	REGS->INP_REG[3] = 0x40;
 	REGS->INP_REG[4] = 0x50;
 
 	return 0;

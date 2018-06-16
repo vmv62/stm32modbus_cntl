@@ -72,7 +72,7 @@ typedef struct{
 	uint8_t slave_addres;
 	uint8_t	command;
 	uint8_t count;
-	uint8_t data[MAX_PDU_SIZE];
+	uint8_t data[MAX_PDU_SIZE/2];
 }PDU_01_TypeDef;
 
 uint16_t pase_pdu(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS);
