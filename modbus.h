@@ -3,10 +3,12 @@
 #define FLASH_START 0x08000000
 #define MAX_PDU_SIZE	254
 #define MDB_ADDR		25
-
+#define PDU_HEAD_SIZE	3
+#define COIL_REG_SIZE	16
 //Контрольные флаги(настройки)
 #define COILS_HDW	((uint16_t)0x0001)
 #define INPUTS_HDW	((uint16_t)0x0002)
+#define reg_swap(a)		((a >> 8) | (a << 8))
 
 
 typedef unsigned int uint32_t;
@@ -79,6 +81,6 @@ typedef struct{
 uint16_t pase_pdu(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS);
 uint16_t regs_filling(RegsTable_TypeDef *REGS);
 uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);
-uint16_t read_input_registers(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);
-uint16_t read_holding_registers(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);
+uint16_t read_input_registers(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);
+uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);
 uint16_t crc16(uint8_t *adr_buffer, uint32_t byte_cnt);

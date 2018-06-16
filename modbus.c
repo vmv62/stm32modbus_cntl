@@ -36,7 +36,7 @@ uint16_t regs_filling(RegsTable_TypeDef *REGS)
 	if(REGS->HOLD.CONT_FLAG & INPUTS_HDW){
 		REGS->COILS |= ((uint16_t)GPIOA->IDR);
 	}else{
-		REGS->COILS = 0xAE41;
+		REGS->COILS = ((uint16_t)USART1->ISR);
 	}
 
 //Заполняем регистры содержащие 16 битные данные для теста.
@@ -59,17 +59,16 @@ uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16_t adress, u
 	{
 		return 0;
 	}
-
-
+	uint16_t tmp = reg_swap(QueryPDU->reg_addr) + reg_swap(QueryPDU->reg_count);
 //Еслм сумма адрес плюс количество превышают колличество регистров, выдаем ошибку.
-	if((adress + num) > 8*sizeof(REGS->COILS)){
+	if((tmp) > COIL_REG_SIZE){
 		return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
 	}
 //Непосредственно читаем заполняем тело ответа
 	uint16_t REG_TMP = REGS->COILS >> adress;
 	buffer[2] = 2;
-	buffer[3]= (uint8_t)REG_TMP;
-	buffer[4] = (REG_TMP >> 8);
+	buffer[3]= (REG_TMP >> 8);
+	buffer[4] = (uint8_t)REG_TMP;
 	byte_count +=2;
 
 	uint16_t CRC16 = crc16(BUFFER, 0x5);
@@ -83,24 +82,36 @@ uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16_t adress, u
 }
 
 
-/*
-uint16_t read_holding_registers(uint16_t reg_addr, uint16_t count, uint16_t *dest)
+
+uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num)
 {
-	uint32_t *contrl_addr;
+	PDU_Query_TypeDef *QueryPDU = ((PDU_Query_TypeDef *)buffer);
 
-	contrl_addr = FLASH_START + reg_addr;
-
-	while(count){
-		*dest = (*contrl_addr>>16);
-		dest++;
-		*dest = *contrl_addr;
-		dest++;
-		contrl_addr++;
-		count--;
+	uint16_t tm_crc = crc16(buffer, 6);
+	if(QueryPDU->crc != tm_crc)
+	{
+		return 0;
 	}
-	return count;
+
+//Еслм сумма адрес плюс количество превышают колличество регистров, выдаем ошибку.
+	if((reg_swap(QueryPDU->reg_addr) + reg_swap(QueryPDU->reg_count)) > 8*sizeof(REGS->COILS)){
+		return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
+	}
+//Непосредственно читаем заполняем тело ответа
+	uint16_t REG_TMP = REGS->COILS >> adress;
+	buffer[2] = 2;
+	buffer[3]= (REG_TMP >> 8);
+	buffer[4] = (uint8_t)REG_TMP;
+
+	uint16_t CRC16 = crc16(BUFFER, 0x5);
+
+	buffer[5] = CRC16;
+	buffer[6] = CRC16 >> 8;
+
+	dma_start_transsmit(buffer, 7);
+	return 0;
 }
-*/
+
 
 //Табличный подсчет контрольной суммы.
 uint16_t crc16(uint8_t *adr_buffer, uint32_t byte_cnt)

@@ -60,10 +60,18 @@ void USART1_IRQHandler(void){
 	{
 		USART1->ICR |= USART_ICR_RTOCF;	//Очистка флага по прерыванию простоя линии
 		USART1->CR2 &= ~USART_CR2_RTOEN;	//Отключаем прерывание паузы приема
+		USART1->CR1 &= ~USART_CR1_RXNEIE;	//Выключаем прерывание по приему байта
 		HW.STATE |= HDWSTATE_MRE;
 		HW.RECV_BYTE_CNT = 0;
-        asm("CPSID i");
 	}
+}
+
+void DMA1_Channel2_3_IRQHandler(void)
+{
+	USART1->CR1 |= USART_CR1_RXNEIE;
+	DMA1->IFCR |= DMA_IFCR_CTCIF2;
+	DMA1->IFCR |= DMA_IFCR_CGIF2;
+	DMA1->IFCR |= DMA_IFCR_CHTIF2;
 }
 
 
