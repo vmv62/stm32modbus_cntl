@@ -59,8 +59,7 @@ uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16_t adress, u
 	{
 		return 0;
 	}
-	uint8_t tm_hi = tm_crc >> 8;
-	uint8_t tm_lo = tm_crc;
+
 
 //Еслм сумма адрес плюс количество превышают колличество регистров, выдаем ошибку.
 	if((adress + num) > 8*sizeof(REGS->COILS)){
@@ -68,18 +67,18 @@ uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16_t adress, u
 	}
 //Непосредственно читаем заполняем тело ответа
 	uint16_t REG_TMP = REGS->COILS >> adress;
-
-	buffer[3]= (REG_TMP >> 8);
-	buffer[4] = (uint8_t)REG_TMP;
+	buffer[2] = 2;
+	buffer[3]= (uint8_t)REG_TMP;
+	buffer[4] = (REG_TMP >> 8);
 	byte_count +=2;
 
-	uint16_t CRC16 = crc16(buffer, (uint32_t)byte_count);
+	uint16_t CRC16 = crc16(BUFFER, 0x5);
 
 	buffer[5] = CRC16;
-	buffer[6] = (CRC16 >> 8);
+	buffer[6] = CRC16 >> 8;
 	byte_count += 2;
-	buffer[2] = 2;
-	dma_start_transsmit((uint32_t)(&(buffer)), (uint16_t)byte_count);
+
+	dma_start_transsmit(buffer, 7);
 	return byte_count;
 }
 
@@ -161,5 +160,5 @@ uint16_t crc16(uint8_t *adr_buffer, uint32_t byte_cnt)
         uchCRCLo = auchCRCLo[uIndex];
     }
 
-    return (uchCRCHi << 8 | uchCRCLo);
+    return (uchCRCHi  | uchCRCLo << 8);
 }

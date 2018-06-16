@@ -32,10 +32,8 @@ int main(void)
     	if(HW.STATE & HDWSTATE_MRE){
     		pase_pdu(BUFFER, &REGS);
     		HW.STATE &= ~HDWSTATE_MRE;
-  //  		dma_start_transsmit(&PDU, sizeof(PDU));
     	}
-  //  	asm("CPSIE i");
- //  	regs_filling(&REGS);
+
     }
 }
 
@@ -60,9 +58,10 @@ void USART1_IRQHandler(void){
 
 	if(USART1->ISR & USART_ISR_RTOF)
 	{
-//		USART1->ICR |= USART_ICR_RTOCF;	//Очистка флага по прерыванию простоя линии
+		USART1->ICR |= USART_ICR_RTOCF;	//Очистка флага по прерыванию простоя линии
 		USART1->CR2 &= ~USART_CR2_RTOEN;	//Отключаем прерывание паузы приема
 		HW.STATE |= HDWSTATE_MRE;
+		HW.RECV_BYTE_CNT = 0;
         asm("CPSID i");
 	}
 }
