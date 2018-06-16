@@ -50,11 +50,15 @@ uint16_t regs_filling(RegsTable_TypeDef *REGS)
 
 //--------------Обработка команды 01----------------------------------
 
-uint16_t read_coils(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num)
+uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num)
 {
-	PDU_01_TypeDef *ANSV = PDU;
+	PDU_Query_TypeDef *QueryPDU = ((PDU_Query_TypeDef *)buffer);
 	uint8_t byte_count = 2;
-	uint16_t tm_crc = crc16((uint8_t)(&PDU->command), 4);
+	uint16_t tm_crc = crc16(buffer, 6);
+	if(QueryPDU->crc != tm_crc)
+	{
+		return 0;
+	}
 	uint8_t tm_hi = tm_crc >> 8;
 	uint8_t tm_lo = tm_crc;
 
@@ -65,17 +69,17 @@ uint16_t read_coils(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, 
 //Непосредственно читаем заполняем тело ответа
 	uint16_t REG_TMP = REGS->COILS >> adress;
 
-	ANSV->data[0]= (REG_TMP >> 8);
-	ANSV->data[1] = (uint8_t)REG_TMP;
+	buffer[3]= (REG_TMP >> 8);
+	buffer[4] = (uint8_t)REG_TMP;
 	byte_count +=2;
 
-	uint16_t CRC16 = crc16(&ANSV->slave_addres, (uint32_t)byte_count);
+	uint16_t CRC16 = crc16(buffer, (uint32_t)byte_count);
 
-	ANSV->data[2] = CRC16;
-	ANSV->data[3] = (CRC16 >> 8);
+	buffer[5] = CRC16;
+	buffer[6] = (CRC16 >> 8);
 	byte_count += 2;
-	ANSV->count = byte_count;
-	dma_start_transsmit((uint32_t)(&(PDU)), (uint16_t)byte_count);
+	buffer[2] = 2;
+	dma_start_transsmit((uint32_t)(&(buffer)), (uint16_t)byte_count);
 	return byte_count;
 }
 
@@ -147,7 +151,7 @@ uint16_t crc16(uint8_t *adr_buffer, uint32_t byte_cnt)
     // РїРµСЂРµРјРµРЅРЅС‹Рµ РґР»СЏ СЂР°СЃС‡РµС‚Р° CRC16 -?*:?????
     unsigned char uchCRCHi = 0xFF;  
     unsigned char uchCRCLo = 0xFF; 
-    unsigned uIndex; 
+    unsigned char uIndex;
     
     /* CRC Generation Function */
     while( byte_cnt--) /* pass through message buffer */
@@ -156,6 +160,6 @@ uint16_t crc16(uint8_t *adr_buffer, uint32_t byte_cnt)
         uchCRCHi = uchCRCLo ^ auchCRCHi[uIndex];
         uchCRCLo = auchCRCLo[uIndex];
     }
-//return (uchCRCHi << 8 | uchCRCLo);
+
     return (uchCRCHi << 8 | uchCRCLo);
 }

@@ -71,13 +71,14 @@ typedef struct{
 typedef struct{
 	uint8_t slave_addres;
 	uint8_t	command;
-	uint8_t count;
-	uint8_t data[MAX_PDU_SIZE/2];
-}PDU_01_TypeDef;
+	uint16_t reg_addr;
+	uint16_t reg_count;
+	uint16_t crc;
+}PDU_Query_TypeDef;
 
 uint16_t pase_pdu(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS);
 uint16_t regs_filling(RegsTable_TypeDef *REGS);
-uint16_t read_coils(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);
+uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);
 uint16_t read_input_registers(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);
 uint16_t read_holding_registers(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);
 uint16_t crc16(uint8_t *adr_buffer, uint32_t byte_cnt);
