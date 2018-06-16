@@ -6,11 +6,13 @@ void hdw_init(){
 //      RCC->APB2ENR |= RCC_APB2ENR_ADC1EN; //Enable clock to ADC
         RCC->APB2ENR |= RCC_APB2ENR_USART1EN; //Enable clock to Usart
         RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
-        RCC->AHBENR |= RCC_AHBENR_DMA1EN;
+        RCC->AHBENR |= RCC_AHBENR_DMA1EN;	//Включили тактирование ДМА
+        RCC->APB2ENR |= RCC_APB2ENR_TIM17EN; //Включили тактирование таймера 6
 //      while(!(ADC1->ISR && ADC_ISR_ADRDY)){} //wait while ADC calibrate
         asm("CPSIE i");				//Включение глобальных прерываний.
         NVIC->ISER |= 1<<USART1_IRQn;		//Включение прерываний от УСАРТА.
-        NVIC->ISER |= 1<<DMA1_Channel2_3_IRQn ;	//Включаем прерывание от ДМА
+        NVIC->ISER |= 1<<DMA1_Channel2_3_IRQn;	//Включаем прерывание от ДМА
+//        NVIC->ISER |= 1<<TIM17_IRQn;
 }
 
 
@@ -39,6 +41,13 @@ void dma_usart_config(uint8_t *buffer, uint16_t buffer_len){
 //	DMA1_Channel3->CCR |=  DMA_CCR_MINC;	//Включение инкрементирования адреса памяти
 //	DMA1_Channel3->CCR |= DMA_CCR_EN;		//Включаем канал ДМА.
 
+	//TIM6 configuration
+//DMA1_Channel2_3_IRQHandler	TIM17->CR1 |= TIM_CR1_CEN; // Настраиваем делитель что таймер тикал 1000 раз в секунду
+/*	TIM17->ARR = 57535 - 1;
+	TIM17->PSC = 1000-1 ; // Чтоб прерывание случалось раз в секунду
+	TIM17->CR1 |= TIM_CR1_OPM;
+	TIM17->DIER |= TIM_DIER_UIE | TIM_CR1_ARPE ; //разрешаем прерывание от таймера
+*/
 }
 
 

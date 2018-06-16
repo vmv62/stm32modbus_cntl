@@ -37,14 +37,6 @@ int main(void)
     }
 }
 
-//Проблеммы работы: прерывание по приему байта происходит, но по простою линии никак не хочет.
-//При приеме, когда на линии появляется стартовый бит происходит поднятие флага USART_ISR_RXNE это означает что можно читать данные из регистра.
-//При работе с ДМА флаг сбрасывается при каждом чтении ДМА данных из регистра РДР.
-//Флаг должен быть очищен пред окончанием приема иначе ошибка переполнения.
-//При обнаружении холостого хода происходит тоже самое что и при приеме, плюс выставляется флаг ИДЛ.
-// При поднятии флага USART_ISR_RXNE происходит прерывание.
-//При настройке бит включения поднимается в самую последнюю очередь.
-//Ошибка переполнения происходит когда не сборшен флаг USART_ISR_RXNE и происходит прием следующего бита.
 
 void USART1_IRQHandler(void){
 	if(USART1->ISR & USART_ISR_RXNE)					//(USART1->ISR & USART_ISR_RTOF)
@@ -61,6 +53,8 @@ void USART1_IRQHandler(void){
 		USART1->ICR |= USART_ICR_RTOCF;	//Очистка флага по прерыванию простоя линии
 		USART1->CR2 &= ~USART_CR2_RTOEN;	//Отключаем прерывание паузы приема
 		USART1->CR1 &= ~USART_CR1_RXNEIE;	//Выключаем прерывание по приему байта
+//		TIM17->ARR = 57535 - 1;
+//		TIM17->CR1 |= TIM_CR1_CEN;
 		HW.STATE |= HDWSTATE_MRE;
 		HW.RECV_BYTE_CNT = 0;
 	}
@@ -68,10 +62,17 @@ void USART1_IRQHandler(void){
 
 void DMA1_Channel2_3_IRQHandler(void)
 {
+//	TIM17->CR1 &= ~TIM_CR1_CEN;
 	USART1->CR1 |= USART_CR1_RXNEIE;
 	DMA1->IFCR |= DMA_IFCR_CTCIF2;
 	DMA1->IFCR |= DMA_IFCR_CGIF2;
 	DMA1->IFCR |= DMA_IFCR_CHTIF2;
 }
 
-
+/*
+void TIM17_IRQHandler(void)
+{
+	USART1->CR1 |= USART_CR1_RXNEIE;
+	TIM17->SR &= ~TIM_SR_UIF; //Сбрасываем флаг UIF
+}
+*/
