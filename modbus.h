@@ -1,7 +1,7 @@
 #define TRUE 1
 #define FALSE 0
 #define FLASH_START 0x08000000
-#define MAX_PDU_SIZE	256
+#define MAX_PDU_SIZE	254
 
 //Контрольные флаги(настройки)
 #define COILS_HDW	((uint16_t)0x0001)
@@ -39,15 +39,17 @@ enum {
     MODBUS_EXCEPTION_MAX
 };
 
+uint8_t BUFFER[256];
+
 //Наполнение таблицы. часть касаемая содержания регистров хранения.
-static typedef struct{
+typedef struct{
 	uint16_t CONT_FLAG;
 	uint16_t VAR_COIL;
 	uint8_t	SLAVE_ADRES;
 }HoldingRegs_TypeDef;
 
 //Таблица регистров контроллера
-static typedef struct{
+typedef struct{
 	uint16_t COILS;
 	uint16_t INPUTS;
 	HoldingRegs_TypeDef HOLD;
@@ -61,6 +63,7 @@ typedef struct{
 	uint8_t body[MAX_PDU_SIZE];
 }PDU_TypeDef;
 
+uint16_t pase_pdu(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS);
 uint16_t regs_filling(RegsTable_TypeDef *REGS);
 uint16_t read_coils(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);
 uint16_t read_input_registers(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);

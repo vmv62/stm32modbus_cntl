@@ -1,21 +1,9 @@
-#include "stm32f030.h"
+#include "stm32f0xx.h"
 #include "modbus.h"
 
-/*
-Заполнение структурв
-Данные:
-	Выхода - физические(выходные регистры контроллера), виртуальные (регистр в котором хранится значение для вывода на сдвиговый регистр)
-	Входа - физические(входные регистры контроллера), считанные в регистр хранения из расщирителя портов.
-	Регитры хранения - память где хранятся настройки (энергонезависимая память). Должны читаться и обновлятся постоянно.
-	Регистры входные - данные полученные с разных датчиков и регистров контроллера.
 
-Представление данных в контроллере (в таблице регистров):
-	Выхода - указатель на регистр с флагами выходов (uint16_t *coils)
-	Входа - указатель на регистр с флагами входов.
-	Регистры хранения - массив указателей хранения настроек. EEPROM размещение.
 
-*/
-
+<<<<<<< HEAD
 int parse_buffer(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS)
 {
 	if(PDU->slave_addres != 25){
@@ -29,58 +17,70 @@ int parse_buffer(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS)
 
 
 //Функция заполнения таблицы
-uint16_t regs_filling(RegsTable_TypeDef *REGS)
-{
-// Заполняем значение выходов
-	if(REGS->HOLD.CONT_FLAG & COILS_HDW){
-		REGC->COILS = ((uint16_t)GPIOA_ODR);		//Записываем в регистр состояние выходов, если выхода виртуальные пишем через функции.
-	}else{
-//		REGC->COIL = 	функция чтения расширителя портов или какой-нибудь другой переферии
+=======
+uint16_t pase_pdu(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS){
+	switch(PDU->command){
+		case READ_COIL_STATUS:	read_coils(PDU, REGS, PDU->body[0],PDU->body[1]);
+								break;
 	}
-
-// Заполняем значение входов
-	if(REGS.HOLD->CONT_FLAG & INPUTS_HDW){
-		REGC->COIL = ((uint16_t)GPIOA_IDR);		//Записываем в регистр состояние входов, если входа виртуальные, пишем через функци.(GPIOA->IDR)
-	}else{
-//		REGC->COIL = 	функция чтения расширителя портов или какой-нибудь другой переферии
-	}
-
-	INP_REG[0] = 0x10;
-	INP_REG[1] = 0x20;
-	INP_REG[2] = 0x30;
-	INP_REG[3] = 0x40;
-	INP_REG[4] = 0x50;
-
-//Остальные регистры холдинг рег хранящие настройка читать с флэш. Записывать только после соответствующей команды 
 }
 
-//--------------Чтение выходов.----------------------------------
+//Заполнение таблицы данных которая хранит регистры устройства.
+>>>>>>> 828d8180277fd3ac49518ddc9c1e38c956a0a422
+uint16_t regs_filling(RegsTable_TypeDef *REGS)
+{
+// Если в настройках указано читать регистр порта(флаг выставлен) читаем порт, если нет, читаем регстр в памяти.
+	if(REGS->HOLD.CONT_FLAG & COILS_HDW){
+		REGS->COILS = ((uint16_t)GPIOA->ODR);		//Считываем регистры порта и помещаем их в таблицу.
+	}else{
+//		REGC->COIL = 	//заполняем регистр в памяти функцией возвращающей состояние выходов.
+	}
+
+// Аналогично записи выше, только заполлняем регистры входов.
+	if(REGS->HOLD.CONT_FLAG & INPUTS_HDW){
+		REGS->COILS = ((uint16_t)GPIOA->IDR);	
+	}else{
+//		REGC->COIL = 
+	}
+
+//Заполняем регистры содержащие 16 битные данные для теста.
+	REGS->INP_REG[0] = 0x10;
+	REGS->INP_REG[1] = 0x20;
+	REGS->INP_REG[2] = 0x30;
+	REGS->INP_REG[3] = 0x40;
+	REGS->INP_REG[4] = 0x50;
+
+	return 0;
+}
+
+//--------------Обработка команды 01----------------------------------
 
 uint16_t read_coils(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num)
 {
 
 	uint8_t byte_count = 3;
 
-//Если адрес плюс число флагов больше чем размер регистра, то выдаем ошибку
+//Еслм сумма адрес плюс количество превышают колличество регистров, выдаем ошибку.
 	if((adress + num) > sizeof(REGS->COILS)){
 		return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
 	}
-//Иначе читаем данные по адресу регистра и сдвигаем влево до адреса начала чтения.
+//Непосредственно читаем заполняем тело ответа
 	uint16_t REG_TMP = REGS->COILS >> adress;
-	if(num > sizeof(uint8_t)){			//Если количество катушек не умещается в один байт 
-		PDU->body[0] = REG_TMP >> sizeof(uint8_t); //Заполняем старший байт.
-		PDU->body[1] = (uint8_t)REG_TMP;		//Заполняем младший байт.
+	if(num > sizeof(uint8_t)){			//если число запрошенных данных превышает размер в восемь бит
+		PDU->body[0] = REG_TMP >> sizeof(uint8_t); //Разбиваем регистр на два бита
+		PDU->body[1] = (uint8_t)REG_TMP;		
 		byte_count +=2;
 	}else{
-		PDU->body[0] = (uint8_t)REG_TMP;	//Если все помещается в один байт.
+		PDU->body[0] = (uint8_t)REG_TMP;	//Если меньше, пишем один.
 		byte_count +=1;
 	}
-//Теперь считаем контрольную сумму.
-	uint16_t CRC16 = crc16(PDU, byte_count);
+//передаем на подсчет контрольной суммы.
+	uint16_t CRC16 = crc16((uint8_t *)PDU, (uint32_t)byte_count);
+	return CRC16;
 }
 
 
-
+/*
 uint16_t read_holding_registers(uint16_t reg_addr, uint16_t count, uint16_t *dest)
 {
 	uint32_t *contrl_addr;
@@ -97,10 +97,9 @@ uint16_t read_holding_registers(uint16_t reg_addr, uint16_t count, uint16_t *des
 	}
 	return count;
 }
+*/
 
-// для расчета контрольной суммы CRC
-// принимает указатель на область памяти с данными 
-// и количество принятых байт
+//Табличный подсчет контрольной суммы.
 uint16_t crc16(uint8_t *adr_buffer, uint32_t byte_cnt)
 {
     /////////////////////////////////////////////////
@@ -123,7 +122,7 @@ uint16_t crc16(uint8_t *adr_buffer, uint32_t byte_cnt)
         0x01,0xC0,0x80,0x41,0x00,0xC1,0x81,0x40,0x00,0xC1,0x81,0x40,0x01,0xC0,0x80,0x41,
         0x00,0xC1,0x81,0x40,0x01,0xC0,0x80,0x41,0x01,0xC0,0x80,0x41,0x00,0xC1,0x81,0x40,
     };
-    /*Table of CRC values for low–order byte*/
+    /*Table of CRC values for lowвЂ“order byte*/
     static char auchCRCLo[]=
     {
         0x00,0xC0,0xC1,0x01,0xC3,0x03,0x02,0xC2,0xC6,0x06,0x07,0xC7,0x05,0xC5,0xC4,0x04,
@@ -145,7 +144,7 @@ uint16_t crc16(uint8_t *adr_buffer, uint32_t byte_cnt)
     };
     ///////////////////////////////////////////////////////////// 
 
-    // переменные для расчета CRC16 -?*:?????
+    // РїРµСЂРµРјРµРЅРЅС‹Рµ РґР»СЏ СЂР°СЃС‡РµС‚Р° CRC16 -?*:?????
     unsigned char uchCRCHi = 0xFF;  
     unsigned char uchCRCLo = 0xFF; 
     unsigned uIndex; 
