@@ -66,8 +66,14 @@ typedef struct{
 typedef struct{
 	uint8_t slave_addres;
 	uint8_t	command;
-	uint16_t data[254];
 }PDU_QueryHead_TypeDef;
+
+typedef struct{
+	PDU_QueryHead_TypeDef head;
+	uint16_t reg_addr;
+	uint16_t reg_count;
+	uint16_t crc;
+}PDU_Query1_4_TypeDef;
 
 uint16_t pase_pdu(uint8_t *buffer, RegsTable_TypeDef *REGS);
 uint16_t regs_filling(RegsTable_TypeDef *REGS);
