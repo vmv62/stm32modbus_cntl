@@ -4,7 +4,7 @@
 
 //Функция заполнения таблицы
 uint16_t pase_pdu(uint8_t *buffer, RegsTable_TypeDef *REGS){
-	PDU_TypeDef *PDU = ((PDU_TypeDef *)buffer);
+	PDU_QueryHead_TypeDef *PDU = ((PDU_QueryHead_TypeDef *)buffer);
 	uint8_t err_holder;
 
 	if(PDU->slave_addres != MDB_ADDR)
@@ -111,7 +111,15 @@ uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS)
 		return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
 	}
 //Непосредственно читаем заполняем тело ответа
-	buffer[2] = 4;
+	buffer[2] = cnt * (sizeof(REGS->INP_REG[adr]));	//Определяем колличество регистров в исходящем сообщении.
+	
+	for(uint8_t i=0; i < buffer[2], i++)
+	{
+		
+	}
+	
+	
+	
 	buffer[3]= (uint8_t)(REGS->INP_REG[adr] >> 24);
 	buffer[4]= (uint8_t)(REGS->INP_REG[adr] >> 16);
 	buffer[5]= (uint8_t)(REGS->INP_REG[adr] >> 8);
