@@ -110,12 +110,11 @@ uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16
 		return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
 	}
 //Непосредственно читаем заполняем тело ответа
-	buffer[2] = 2;
-	buffer[3]= (uint8_t)(REGS->INP_REG[adress] >> 24);
-	buffer[4]= (uint8_t)(REGS->INP_REG[adress] >> 16);
-	buffer[5]= (uint8_t)(REGS->INP_REG[adress] >> 8);
-	buffer[6] = (uint8_t)REGS->INP_REG[adress];
-
+	buffer[2] = 4;
+	buffer[3]= (uint8_t)(REGS->INP_REG[QueryPDU->reg_addr] >> 24);
+	buffer[4]= (uint8_t)(REGS->INP_REG[QueryPDU->reg_addr] >> 16);
+	buffer[5]= (uint8_t)(REGS->INP_REG[QueryPDU->reg_addr] >> 8);
+	buffer[6] = (uint8_t)REGS->INP_REG[QueryPDU->reg_addr];
 	uint16_t CRC16 = crc16(BUFFER, 0x7);
 
 	buffer[7] = CRC16;
