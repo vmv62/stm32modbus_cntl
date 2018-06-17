@@ -8,69 +8,68 @@ void dma_start_transsmit(uint8_t *buffer, uint16_t buffer_len);
 void dma_usart_config(uint8_t *buffer, uint16_t buffer_len);
 
 
-//Структура для хранения сервиных регистров.
-static struct {
-	uint8_t end_transmission;
-	uint32_t byte_count;
-}Serv;
+
 
 //Объявляем структуры таблицы регистров и структуры ПДУ.
-PDU_TypeDef PDU;
 RegsTable_TypeDef REGS;
-
+HDWS_TypeDef HW;
+uint32_t cnt=0;
 
 
 int main(void)
 {
-	//Инициализируем члены сервисной структуры.
-	Serv.byte_count = 0;	//Считаем принятые байты
-	Serv.end_transmission = 0; //Флаг конца приема ПДУ.
+	//Инициализируем регистр флагов
+	HW.STATE = 0;
+
+
 	hdw_init();			//Инициализация переферии.
-	dma_usart_config(&PDU, sizeof(PDU));
-    while(1)
+	dma_usart_config(BUFFER, sizeof(BUFFER));
+
+	while(1)
     {
-    	//Обработчик состояния выставленного флага конца передачи.
-    	if(Serv.end_transmission){
-    		Serv.end_transmission = 0;
-    		pase_pdu(&PDU, &REGS);
-    		dma_start_transsmit(&PDU, sizeof(PDU));
-    	}
     	regs_filling(&REGS);
+    	//Обработчик состояния выставленного флага конца передачи.
+    	if(HW.STATE & HDWSTATE_MRE){
+    		pase_pdu(BUFFER, &REGS);
+    		HW.STATE &= ~HDWSTATE_MRE;
+    	}
+
     }
 }
 
-//Проблеммы работы: прерывание по приему байта происходит, но по простою линии никак не хочет.
-//При приеме, когда на линии появляется стартовый бит происходит поднятие флага USART_ISR_RXNE это означает что можно читать данные из регистра.
-//При работе с ДМА флаг сбрасывается при каждом чтении ДМА данных из регистра РДР.
-//Флаг должен быть очищен пред окончанием приема иначе ошибка переполнения.
-//При обнаружении холостого хода происходит тоже самое что и при приеме, плюс выставляется флаг ИДЛ.
-// При поднятии флага USART_ISR_RXNE происходит прерывание.
-//При настройке бит включения поднимается в самую последнюю очередь.
-//Ошибка переполнения происходит когда не сборшен флаг USART_ISR_RXNE и происходит прием следующего бита.
 
 void USART1_IRQHandler(void){
-	if(!(USART1->ISR & USART_ISR_RXNE) & (USART1->ISR & USRT_ISR_IDLE)) //Если условие выполнено то приемный буфер пуст и линия в простое.
+	if(USART1->ISR & USART_ISR_RXNE)					//(USART1->ISR & USART_ISR_RTOF)
 	{
-		USART1->ICR &= ~USART_ICR_IDLECF; 	//Сбрасываем флаг холостой линии.
-		Serv.end_transmission = 1;		//Ставим флаг окончания приема пакета.
-		Serv.byte_count = DMA1_Channel3->CNDTR  //Считываем колличество непринятых байт для вычисления принятых.
-		DMA1_Channel3->CNDTR = 256; 		//Перезаписываем счетчик байтов ДМА канала.
+		BUFFER[HW.RECV_BYTE_CNT] = (uint8_t)USART1->RDR;
+		HW.RECV_BYTE_CNT++;
+		USART1->ICR |= USART_ICR_RTOCF;	//Очистка флага прерывания по простою приемника
+		USART1->RTOR = 0x3;					//Время до наступления прерывания при простое линии
+		USART1->CR2 |= USART_CR2_RTOEN;	//Включение прерывания по паузе  приема
+	}
+
+	if(USART1->ISR & USART_ISR_RTOF)
+	{
+		USART1->ICR |= USART_ICR_RTOCF;	//Очистка флага по прерыванию простоя линии
+		USART1->CR2 &= ~USART_CR2_RTOEN;	//Отключаем прерывание паузы приема
+		USART1->CR1 &= ~USART_CR1_RXNEIE;	//Выключаем прерывание по приему байта
+		HW.STATE |= HDWSTATE_MRE;
+		HW.RECV_BYTE_CNT = 0;
 	}
 }
 
-//Старая функция обработчика прерывания.
+void DMA1_Channel2_3_IRQHandler(void)
+{
+	USART1->CR1 |= USART_CR1_RXNEIE;
+	DMA1->IFCR |= DMA_IFCR_CTCIF2;
+	DMA1->IFCR |= DMA_IFCR_CGIF2;
+	DMA1->IFCR |= DMA_IFCR_CHTIF2;
+}
+
 /*
-	if(USART1->ISR & USART_ISR_RXNE){	//Прерывание "регистр приема не пуст"
-		BUFFER[Serv.byte_count] = (uint8_t)(USART1->RDR);
-		USART1->CR1 |= USART_CR2_RTOEN;
-		USART1->CR1 |= USART_CR1_RTOIE;	//Включение прерывания по простою линии приема.
-		Serv.byte_count++;			//Почему то не инкрементируется? Видимо переменная не видна.
-	}
-	if(USART1->ISR & USART_ISR_RTOF){	//Прерывание по простою линии приема
-		USART1->CR1 &= ~USART_CR1_RTOIE;
-		USART1->ICR |= USART_ICR_RTOCF; //Сброс флага прерывания по простою линии приема.
-//		USART1->CR1 &= ~USART_CR1_RTOIE; //Отключаем прерывание по простою, чтобы оно не мешало.
-//		USART1->RQR &= ~USART_RQR_RXFRQ;
-		Serv.end_transmission = 1;		//Переменная инициализируется это работает.
-	}
+void TIM17_IRQHandler(void)
+{
+	USART1->CR1 |= USART_CR1_RXNEIE;
+	TIM17->SR &= ~TIM_SR_UIF; //Сбрасываем флаг UIF
+}
 */

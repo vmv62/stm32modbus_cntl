@@ -3,7 +3,6 @@
 
 
 
-<<<<<<< HEAD
 int parse_buffer(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS)
 {
 	if(PDU->slave_addres != 25){
@@ -17,16 +16,33 @@ int parse_buffer(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS)
 
 
 //Функция заполнения таблицы
-=======
-uint16_t pase_pdu(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS){
-	switch(PDU->command){
-		case READ_COIL_STATUS:	read_coils(PDU, REGS, PDU->body[0],PDU->body[1]);
-								break;
+uint16_t pase_pdu(uint8_t *buffer, RegsTable_TypeDef *REGS){
+	PDU_TypeDef *PDU = ((PDU_TypeDef *)buffer);
+	uint8_t err_holder;
+
+	if(PDU->slave_addres != MDB_ADDR)
+	{
+		return MODBUS_ILLEGAL_SLAVE_ADDR;
 	}
+
+
+	switch(PDU->command)
+	{
+		case READ_COIL_STATUS:	if(err_holder = read_coils(PDU, REGS)){
+						error_handler(err_holder, buffer);
+					}
+								break;
+		case READ_HOLDING_REGISTERS:	if(err_holder = read_holding_registers(PDU, REGS)){
+							error_handler(err_holder, buffer);
+						}
+								break;
+		default:	error_handler(MODBUS_EXCEPTION_ILLEGAL_FUNCTION, buffer);
+	}
+
+	return 0;
 }
 
 //Заполнение таблицы данных которая хранит регистры устройства.
->>>>>>> 828d8180277fd3ac49518ddc9c1e38c956a0a422
 uint16_t regs_filling(RegsTable_TypeDef *REGS)
 {
 // Если в настройках указано читать регистр порта(флаг выставлен) читаем порт, если нет, читаем регстр в памяти.
@@ -38,16 +54,15 @@ uint16_t regs_filling(RegsTable_TypeDef *REGS)
 
 // Аналогично записи выше, только заполлняем регистры входов.
 	if(REGS->HOLD.CONT_FLAG & INPUTS_HDW){
-		REGS->COILS = ((uint16_t)GPIOA->IDR);	
+		REGS->COILS |= ((uint16_t)GPIOA->IDR);
 	}else{
-//		REGC->COIL = 
+		REGS->COILS = ((uint16_t)USART1->ISR);
 	}
 
 //Заполняем регистры содержащие 16 битные данные для теста.
 	REGS->INP_REG[0] = 0x10;
 	REGS->INP_REG[1] = 0x20;
 	REGS->INP_REG[2] = 0x30;
-	REGS->INP_REG[3] = 0x40;
 	REGS->INP_REG[4] = 0x50;
 
 	return 0;
@@ -55,49 +70,87 @@ uint16_t regs_filling(RegsTable_TypeDef *REGS)
 
 //--------------Обработка команды 01----------------------------------
 
-uint16_t read_coils(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num)
+uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS)
 {
+	PDU_Query_TypeDef *QueryPDU = ((PDU_Query_TypeDef *)buffer);
+	uint8_t byte_count = 2;
+	uint16_t tm_crc = crc16(buffer, 6);
+	if(reg_swap(QueryPDU->crc) != tm_crc)
+	{
+		return 0;
+	}
 
-	uint8_t byte_count = 3;
-
+	uint16_t adr = reg_swap(QueryPDU->reg_addr);
+	uint16_t cnt = reg_swap(QueryPDU->reg_count);
 //Еслм сумма адрес плюс количество превышают колличество регистров, выдаем ошибку.
-	if((adress + num) > sizeof(REGS->COILS)){
+	if((adr + cnt) > COIL_REG_COUNT){
 		return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
 	}
 //Непосредственно читаем заполняем тело ответа
-	uint16_t REG_TMP = REGS->COILS >> adress;
-	if(num > sizeof(uint8_t)){			//если число запрошенных данных превышает размер в восемь бит
-		PDU->body[0] = REG_TMP >> sizeof(uint8_t); //Разбиваем регистр на два бита
-		PDU->body[1] = (uint8_t)REG_TMP;		
-		byte_count +=2;
-	}else{
-		PDU->body[0] = (uint8_t)REG_TMP;	//Если меньше, пишем один.
-		byte_count +=1;
-	}
-//передаем на подсчет контрольной суммы.
-	uint16_t CRC16 = crc16((uint8_t *)PDU, (uint32_t)byte_count);
-	return CRC16;
+	uint16_t REG_TMP = REGS->COILS >> adr;
+	buffer[2] = 2;
+	buffer[3]= (REG_TMP >> 8);
+	buffer[4] = (uint8_t)REG_TMP;
+	byte_count +=2;
+
+	uint16_t CRC16 = crc16(BUFFER, 0x5);
+
+	buffer[5] = CRC16;
+	buffer[6] = CRC16 >> 8;
+	byte_count += 2;
+
+	dma_start_transsmit(buffer, 7);
+	return 0;
 }
 
 
-/*
-uint16_t read_holding_registers(uint16_t reg_addr, uint16_t count, uint16_t *dest)
+
+uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS)
 {
-	uint32_t *contrl_addr;
+	PDU_Query_TypeDef *QueryPDU = ((PDU_Query_TypeDef *)buffer);
 
-	contrl_addr = FLASH_START + reg_addr;
+	uint16_t adr = reg_swap(QueryPDU->reg_addr);
+	uint16_t cnt = reg_swap(QueryPDU->reg_count);
 
-	while(count){
-		*dest = (*contrl_addr>>16);
-		dest++;
-		*dest = *contrl_addr;
-		dest++;
-		contrl_addr++;
-		count--;
+	uint16_t tm_crc = reg_swap(crc16(buffer, 6));
+	if(QueryPDU->crc != tm_crc)
+	{
+		return MODBUS_EXCEPTION_MEMORY_PARITY;
 	}
-	return count;
+
+//Еслм сумма адрес плюс количество превышают колличество регистров, выдаем ошибку.
+	if((adr + cnt) > INP_REG_COUNT)
+	{
+		return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
+	}
+//Непосредственно читаем заполняем тело ответа
+	buffer[2] = 4;
+	buffer[3]= (uint8_t)(REGS->INP_REG[adr] >> 24);
+	buffer[4]= (uint8_t)(REGS->INP_REG[adr] >> 16);
+	buffer[5]= (uint8_t)(REGS->INP_REG[adr] >> 8);
+	buffer[6] = (uint8_t)REGS->INP_REG[adr];
+	uint16_t CRC16 = crc16(buffer, 0x7);
+
+	buffer[7] = CRC16;
+	buffer[8] = CRC16 >> 8;
+
+	dma_start_transsmit(buffer, 9);
+	return 0;
 }
-*/
+
+uint8_t error_handler(uint8_t error, uint8_t *buffer)
+{
+	buffer[1] = 0x8F;
+	buffer[2] = error;
+
+	uint16_t CRC16 = crc16(buffer, 0x3);
+
+	buffer[3] = CRC16;
+	buffer[4] = CRC16 >> 8;
+	dma_start_transsmit(buffer, 5);
+	return 0;
+}
+
 
 //Табличный подсчет контрольной суммы.
 uint16_t crc16(uint8_t *adr_buffer, uint32_t byte_cnt)
@@ -147,7 +200,7 @@ uint16_t crc16(uint8_t *adr_buffer, uint32_t byte_cnt)
     // РїРµСЂРµРјРµРЅРЅС‹Рµ РґР»СЏ СЂР°СЃС‡РµС‚Р° CRC16 -?*:?????
     unsigned char uchCRCHi = 0xFF;  
     unsigned char uchCRCLo = 0xFF; 
-    unsigned uIndex; 
+    unsigned char uIndex;
     
     /* CRC Generation Function */
     while( byte_cnt--) /* pass through message buffer */
@@ -156,5 +209,6 @@ uint16_t crc16(uint8_t *adr_buffer, uint32_t byte_cnt)
         uchCRCHi = uchCRCLo ^ auchCRCHi[uIndex];
         uchCRCLo = auchCRCLo[uIndex];
     }
-return (uchCRCHi << 8 | uchCRCLo);
+
+    return (uchCRCHi << 8  | uchCRCLo);
 }
