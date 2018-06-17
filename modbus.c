@@ -1,19 +1,6 @@
 #include "stm32f0xx.h"
 #include "modbus.h"
-
-
-
-int parse_buffer(PDU_TypeDef *PDU, RegsTable_TypeDef *REGS)
-{
-	if(PDU->slave_addres != 25){
-		return 0;
-	}
-	switch(PDU->command){
-		case READ_COIL_STATUS:	read_coils(PDU, REGS, PDU->body[0], PDU->body[1]);
-					break;
-	}
-}
-
+#include "hw_init.h"
 
 //Функция заполнения таблицы
 uint16_t pase_pdu(uint8_t *buffer, RegsTable_TypeDef *REGS){
@@ -28,11 +15,11 @@ uint16_t pase_pdu(uint8_t *buffer, RegsTable_TypeDef *REGS){
 
 	switch(PDU->command)
 	{
-		case READ_COIL_STATUS:	if(err_holder = read_coils(PDU, REGS)){
+		case READ_COIL_STATUS:	if((err_holder = read_coils((uint8_t *)(PDU), REGS))){
 						error_handler(err_holder, buffer);
 					}
 								break;
-		case READ_HOLDING_REGISTERS:	if(err_holder = read_holding_registers(PDU, REGS)){
+		case READ_HOLDING_REGISTERS:	if((err_holder = read_holding_registers((uint8_t *)(PDU), REGS))){
 							error_handler(err_holder, buffer);
 						}
 								break;
