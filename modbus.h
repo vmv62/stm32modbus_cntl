@@ -2,10 +2,11 @@
 #define FALSE 0
 #define FLASH_START 0x08000000
 #define MAX_PDU_SIZE	254
-#define MDB_ADDR		25
+#define MDB_ADDR	25
 #define PDU_HEAD_SIZE	3
 #define COIL_REG_COUNT	16
 #define INP_REG_COUNT	5
+#define CRC_BYTE_CNT	2
 //Контрольные флаги(настройки)
 #define COILS_HDW	((uint16_t)0x0001)
 #define INPUTS_HDW	((uint16_t)0x0002)
