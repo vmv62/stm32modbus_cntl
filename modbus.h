@@ -81,8 +81,8 @@ typedef struct{
 
 uint16_t pase_pdu(uint8_t *buffer, RegsTable_TypeDef *REGS);
 uint16_t regs_filling(RegsTable_TypeDef *REGS);
-uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);
-uint16_t read_input_registers(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);
-uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num);
+uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS);
+uint16_t read_input_registers(uint8_t *buffer, RegsTable_TypeDef *REGS);
+uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS);
 uint8_t error_handler(uint8_t error, uint8_t *buffer);
 uint16_t crc16(uint8_t *adr_buffer, uint32_t byte_cnt);

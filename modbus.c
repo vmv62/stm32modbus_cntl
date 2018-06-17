@@ -4,7 +4,7 @@
 
 
 uint16_t pase_pdu(uint8_t *buffer, RegsTable_TypeDef *REGS){
-	PDU_TypeDef *PDU = (PDU_TypeDef *)(buffer);
+	PDU_TypeDef *PDU = ((PDU_TypeDef *)buffer);
 	uint8_t err_holder;
 
 	if(PDU->slave_addres != MDB_ADDR)
@@ -12,24 +12,20 @@ uint16_t pase_pdu(uint8_t *buffer, RegsTable_TypeDef *REGS){
 		return MODBUS_ILLEGAL_SLAVE_ADDR;
 	}
 
-//	crc = (body[0] << 8) & body[1];
-//	if(body & crc16(PDU->command)){
-//		while(1);
-//	}
 
-	switch(PDU->command){
-		case READ_COIL_STATUS:	if(err_holder = read_coils(PDU, REGS, ((PDU->RA_HI << 8) | PDU->RA_LO), ((PDU->DB_HI << 8) | PDU->DB_LO)))
-								{
+	switch(PDU->command)
+	{
+		case READ_COIL_STATUS:	if(err_holder = read_coils(PDU, REGS)){
 										error_handler(err_holder, buffer);
 								}
 								break;
-		case READ_HOLDING_REGISTERS:	if(err_holder = read_holding_registers(PDU, REGS, ((PDU->RA_HI << 8) | PDU->RA_LO), ((PDU->DB_HI << 8) | PDU->DB_LO)))
-								{
-										error_handler(err_holder, buffer);
-								}
+		case READ_HOLDING_REGISTERS:	if(err_holder = read_holding_registers(PDU, REGS)){
+											error_handler(err_holder, buffer);
+										}
 								break;
 		default:	error_handler(MODBUS_EXCEPTION_ILLEGAL_FUNCTION, buffer);
 	}
+
 	return 0;
 }
 
@@ -61,22 +57,24 @@ uint16_t regs_filling(RegsTable_TypeDef *REGS)
 
 //--------------Обработка команды 01----------------------------------
 
-uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num)
+uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS)
 {
 	PDU_Query_TypeDef *QueryPDU = ((PDU_Query_TypeDef *)buffer);
 	uint8_t byte_count = 2;
 	uint16_t tm_crc = crc16(buffer, 6);
-	if(QueryPDU->crc != tm_crc)
+	if(reg_swap(QueryPDU->crc) != tm_crc)
 	{
 		return 0;
 	}
-	uint16_t tmp = reg_swap(QueryPDU->reg_addr) + reg_swap(QueryPDU->reg_count);
+
+	uint16_t adr = reg_swap(QueryPDU->reg_addr);
+	uint16_t cnt = reg_swap(QueryPDU->reg_count);
 //Еслм сумма адрес плюс количество превышают колличество регистров, выдаем ошибку.
-	if((tmp) > COIL_REG_COUNT){
+	if((adr + cnt) > COIL_REG_COUNT){
 		return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
 	}
 //Непосредственно читаем заполняем тело ответа
-	uint16_t REG_TMP = REGS->COILS >> adress;
+	uint16_t REG_TMP = REGS->COILS >> adr;
 	buffer[2] = 2;
 	buffer[3]= (REG_TMP >> 8);
 	buffer[4] = (uint8_t)REG_TMP;
@@ -94,28 +92,31 @@ uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16_t adress, u
 
 
 
-uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS, uint16_t adress, uint16_t num)
+uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS)
 {
 	PDU_Query_TypeDef *QueryPDU = ((PDU_Query_TypeDef *)buffer);
 
-	uint16_t tm_crc = crc16(buffer, 6);
+	uint16_t adr = reg_swap(QueryPDU->reg_addr);
+	uint16_t cnt = reg_swap(QueryPDU->reg_count);
+
+	uint16_t tm_crc = reg_swap(crc16(buffer, 6));
 	if(QueryPDU->crc != tm_crc)
 	{
-		return 0;
+		return MODBUS_EXCEPTION_MEMORY_PARITY;
 	}
 
-	uint16_t tmp = reg_swap(QueryPDU->reg_addr) + reg_swap(QueryPDU->reg_count);
 //Еслм сумма адрес плюс количество превышают колличество регистров, выдаем ошибку.
-	if((tmp) > INP_REG_COUNT){
+	if((adr + cnt) > INP_REG_COUNT)
+	{
 		return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
 	}
 //Непосредственно читаем заполняем тело ответа
 	buffer[2] = 4;
-	buffer[3]= (uint8_t)(REGS->INP_REG[QueryPDU->reg_addr] >> 24);
-	buffer[4]= (uint8_t)(REGS->INP_REG[QueryPDU->reg_addr] >> 16);
-	buffer[5]= (uint8_t)(REGS->INP_REG[QueryPDU->reg_addr] >> 8);
-	buffer[6] = (uint8_t)REGS->INP_REG[QueryPDU->reg_addr];
-	uint16_t CRC16 = crc16(BUFFER, 0x7);
+	buffer[3]= (uint8_t)(REGS->INP_REG[adr] >> 24);
+	buffer[4]= (uint8_t)(REGS->INP_REG[adr] >> 16);
+	buffer[5]= (uint8_t)(REGS->INP_REG[adr] >> 8);
+	buffer[6] = (uint8_t)REGS->INP_REG[adr];
+	uint16_t CRC16 = crc16(buffer, 0x7);
 
 	buffer[7] = CRC16;
 	buffer[8] = CRC16 >> 8;
@@ -196,5 +197,5 @@ uint16_t crc16(uint8_t *adr_buffer, uint32_t byte_cnt)
         uchCRCLo = auchCRCLo[uIndex];
     }
 
-    return (uchCRCHi  | uchCRCLo << 8);
+    return (uchCRCHi << 8  | uchCRCLo);
 }
