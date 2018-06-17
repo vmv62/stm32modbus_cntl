@@ -65,21 +65,9 @@ typedef struct{
 //Структура сообщения протокола.
 typedef struct{
 	uint8_t slave_addres;
-	uint8_t command;
-	uint8_t RA_HI;
-	uint8_t RA_LO;
-	uint8_t DB_HI;
-	uint8_t DB_LO;
-	uint8_t body[MAX_PDU_SIZE];
-}PDU_TypeDef;
-
-typedef struct{
-	uint8_t slave_addres;
 	uint8_t	command;
-	uint16_t reg_addr;
-	uint16_t reg_count;
-	uint16_t crc;
-}PDU_Query_TypeDef;
+	uint16_t data[254];
+}PDU_QueryHead_TypeDef;
 
 uint16_t pase_pdu(uint8_t *buffer, RegsTable_TypeDef *REGS);
 uint16_t regs_filling(RegsTable_TypeDef *REGS);
