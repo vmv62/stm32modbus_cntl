@@ -59,12 +59,12 @@ uint16_t regs_filling(RegsTable_TypeDef *REGS)
 
 uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS)
 {
-	PDU_Query_TypeDef *QueryPDU = ((PDU_Query_TypeDef *)buffer);
-	uint8_t byte_count = 2;
-	uint16_t tm_crc = crc16(buffer, 6);
-	if(reg_swap(QueryPDU->crc) != tm_crc)
+	PDU_Query1_4_TypeDef *QueryPDU = ((PDU_Query1_4_TypeDef *)buffer);
+
+	uint16_t tm_crc = reg_swap(crc16(buffer, 6));
+	if(QueryPDU->crc != tm_crc)
 	{
-		return 0;
+		return MODBUS_EXCEPTION_MEMORY_PARITY;
 	}
 
 	uint16_t adr = reg_swap(QueryPDU->reg_addr);
@@ -78,13 +78,11 @@ uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS)
 	buffer[2] = 2;
 	buffer[3]= (REG_TMP >> 8);
 	buffer[4] = (uint8_t)REG_TMP;
-	byte_count +=2;
 
-	uint16_t CRC16 = crc16(BUFFER, 0x5);
+	uint16_t CRC16 = crc16(buffer, 0x5);
 
-	buffer[5] = CRC16;
-	buffer[6] = CRC16 >> 8;
-	byte_count += 2;
+	buffer[5] = CRC16 >> 8;
+	buffer[6] = CRC16;
 
 	dma_start_transsmit(buffer, 7);
 	return 0;
@@ -94,7 +92,7 @@ uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS)
 
 uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS)
 {
-	PDU_Query_TypeDef *QueryPDU = ((PDU_Query_TypeDef *)buffer);
+	PDU_Query1_4_TypeDef *QueryPDU = ((PDU_Query1_4_TypeDef *)buffer);
 
 	uint16_t adr = reg_swap(QueryPDU->reg_addr);
 	uint16_t cnt = reg_swap(QueryPDU->reg_count);
@@ -111,25 +109,25 @@ uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS)
 		return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
 	}
 //Непосредственно читаем заполняем тело ответа
-	buffer[2] = cnt * (sizeof(REGS->INP_REG[adr]));	//Определяем колличество регистров в исходящем сообщении.
+//	buffer[2] = cnt * (sizeof(REGS->INP_REG[adr]));	//Определяем колличество регистров в исходящем сообщении.
+	buffer[2] = 2;
+//	for(uint8_t i=0; i < buffer[2], i++)
+//	{
+//
+//	}
 	
-	for(uint8_t i=0; i < buffer[2], i++)
-	{
-		
-	}
-	
-	
-	
-	buffer[3]= (uint8_t)(REGS->INP_REG[adr] >> 24);
-	buffer[4]= (uint8_t)(REGS->INP_REG[adr] >> 16);
-	buffer[5]= (uint8_t)(REGS->INP_REG[adr] >> 8);
-	buffer[6] = (uint8_t)REGS->INP_REG[adr];
-	uint16_t CRC16 = crc16(buffer, 0x7);
+	buffer[3]= (uint8_t)(REGS->INP_REG[adr] >> 8);
+	buffer[4]= (uint8_t)REGS->INP_REG[adr];
+//	buffer[5]= (uint8_t)(REGS->INP_REG[adr] >> 8);
+//	buffer[6] = (uint8_t)REGS->INP_REG[adr];
 
-	buffer[7] = CRC16;
-	buffer[8] = CRC16 >> 8;
 
-	dma_start_transsmit(buffer, 9);
+	uint16_t CRC16 = crc16(buffer, 0x5);
+
+	buffer[5] = CRC16 >> 8;
+	buffer[6] = CRC16;
+
+	dma_start_transsmit(buffer, 7);
 	return 0;
 }
 
