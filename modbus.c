@@ -92,7 +92,7 @@ uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS)
 
 uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS)
 {
-	PDU_Query1_4_TypeDef *QueryPDU = ((PDU_Query1_4_TypeDef *)buffer);
+	PDU_Query1_4_TypeDef *QueryPDU = ((PDU_Query1_4_TypeDef *)buffer); 	//Структура запроса функций 1-4
 
 	uint16_t adr = reg_swap(QueryPDU->reg_addr);
 	uint16_t cnt = reg_swap(QueryPDU->reg_count);
@@ -109,15 +109,18 @@ uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS)
 		return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
 	}
 //Непосредственно читаем заполняем тело ответа
-//	buffer[2] = cnt * (sizeof(REGS->INP_REG[adr]));	//Определяем колличество регистров в исходящем сообщении.
-	buffer[2] = 2;
-//	for(uint8_t i=0; i < buffer[2], i++)
-//	{
-//
-//	}
+
+	buffer[2] = sizeof(uint16_t) * cnt;		//вычисляем колличество регистров в ответе на запрос.
 	
-	buffer[3]= (uint8_t)(REGS->INP_REG[adr] >> 8);
-	buffer[4]= (uint8_t)REGS->INP_REG[adr];
+	for(uint8_t i=3; i < (3 + cnt), i++)		//3 сдесь подразумевается как сдвиг по буферу на позицию положения регстров.
+	{
+		buffer[i]= (uint8_t)(REGS->INP_REG[adr] >> 8);
+		buffer[i+1]= (uint8_t)REGS->INP_REG[adr];
+		adr++;					//инкрементируем адрес
+	}
+	
+//	buffer[3]= (uint8_t)(REGS->INP_REG[adr] >> 8);
+//	buffer[4]= (uint8_t)REGS->INP_REG[adr];
 //	buffer[5]= (uint8_t)(REGS->INP_REG[adr] >> 8);
 //	buffer[6] = (uint8_t)REGS->INP_REG[adr];
 
@@ -140,7 +143,7 @@ uint8_t error_handler(uint8_t error, uint8_t *buffer)
 
 	buffer[3] = CRC16;
 	buffer[4] = CRC16 >> 8;
-	dma_start_transsmit(buffer, 5);
+	dma_start_transsmit(buffer, (PDU_HEAD_SIZE+regs_count+CRC_BYTE_CNT);
 	return 0;
 }
 
