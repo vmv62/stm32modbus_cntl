@@ -112,10 +112,14 @@ uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS)
 
 	buffer[2] = sizeof(uint16_t) * cnt;		//вычисляем колличество регистров в ответе на запрос.
 	
-	for(uint8_t i=3; i < (3 + cnt), i++)		//3 сдесь подразумевается как сдвиг по буферу на позицию положения регстров.
+	uint8_t i = 0;
+	uint8_t *b_pntr = &buffer[3];
+	for(i = 0; i < cnt; i++)		//3десь подразумевается как сдвиг по буферу на позицию положения регстров.
 	{
-		buffer[i]= (uint8_t)(REGS->INP_REG[adr] >> 8);
-		buffer[i+1]= (uint8_t)REGS->INP_REG[adr];
+		*b_pntr = (uint8_t)(REGS->INP_REG[adr] >> 8);
+		b_pntr++;
+		*b_pntr = (uint8_t)REGS->INP_REG[adr];
+		b_pntr++;
 		adr++;					//инкрементируем адрес
 	}
 	
@@ -125,12 +129,12 @@ uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS)
 //	buffer[6] = (uint8_t)REGS->INP_REG[adr];
 
 
-	uint16_t CRC16 = crc16(buffer, 0x5);
+	uint16_t CRC16 = crc16(buffer, ((cnt * 2)+3));
 
-	buffer[5] = CRC16 >> 8;
-	buffer[6] = CRC16;
+	buffer[3 + (cnt * 2)] = CRC16 >> 8;
+	buffer[3 + (cnt * 2) + 1] = CRC16;
 
-	dma_start_transsmit(buffer, 7);
+	dma_start_transsmit(buffer, (3 + (cnt * 2) + 2));
 	return 0;
 }
 
@@ -143,7 +147,7 @@ uint8_t error_handler(uint8_t error, uint8_t *buffer)
 
 	buffer[3] = CRC16;
 	buffer[4] = CRC16 >> 8;
-	dma_start_transsmit(buffer, (PDU_HEAD_SIZE+regs_count+CRC_BYTE_CNT);
+	dma_start_transsmit(buffer, (PDU_HEAD_SIZE+buffer[2]+CRC_BYTE_CNT));
 	return 0;
 }
 
