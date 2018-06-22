@@ -47,6 +47,7 @@ uint16_t regs_filling(RegsTable_TypeDef *REGS)
 	}
 
 //Заполняем регистры содержащие 16 битные данные для теста.
+	int np = get_adc();
 	REGS->INP_REG[0] = 0x10;
 	REGS->INP_REG[1] = 0x20;
 	REGS->INP_REG[2] = 0x30;
@@ -123,11 +124,6 @@ uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS)
 		b_pntr++;
 		adr++;					//инкрементируем адрес
 	}
-	
-//	buffer[3]= (uint8_t)(REGS->INP_REG[adr] >> 8);
-//	buffer[4]= (uint8_t)REGS->INP_REG[adr];
-//	buffer[5]= (uint8_t)(REGS->INP_REG[adr] >> 8);
-//	buffer[6] = (uint8_t)REGS->INP_REG[adr];
 
 
 	uint16_t CRC16 = crc16(buffer, ((cnt * 2)+PDU_HEAD_SIZE));

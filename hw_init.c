@@ -1,11 +1,5 @@
 #include "hw_init.h"
 
-void hdw_init(){
-
-
-}
-
-
 
 void dma_usart_config(uint8_t *buffer, uint16_t buffer_len){
 	//Clock feeding enable
@@ -21,9 +15,21 @@ void dma_usart_config(uint8_t *buffer, uint16_t buffer_len){
 //        NVIC->ISER |= 1<<TIM17_IRQn;
 
     //ADC
-    ADC1->CHSELR = ADC_CHSELR_CHSEL16;
-    ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2;
-    ADC->CCR |= ADC_CCR_TSEN;
+    //Калибровка преобразователя	ADCAL=1 по завершению калибровки бит снимается аппаратно.
+/*    ADC1->CR |= ADC_CR_ADCAL;
+    while(ADC1->CR & ADC_CR_ADCAL){;;}
+    //Clear the ADRDY bit in ADC_ISR register by programming this bit to 1.
+    //Выбираем канал для преобразования.
+    ADC1->CHSELR |= ADC_CHSELR_CHSEL16;
+    ADC1->CCR &= ~ADC_CR_ADSTART;
+    ADC1->CCR |= ADC_CCR_TSEN | ADC_CCR_VREFEN;
+    //Set ADEN=1 in the ADC_CR register
+    ADC1->CR |= ADC_CR_ADEN;
+    //
+*/
+	ADC1->ISR |=(ADC_ISR_ADRDY); //Clear ADC ready flag
+	ADC1->CR |=(ADC_CR_ADEN); //ADC on
+
 
 	//GPIO config
 	GPIOA->MODER |= GPIO_MODER_MODER9_1 | GPIO_MODER_MODER10_1;  			//Назначение альтернативных функций для выводов (переназначение)
@@ -64,4 +70,19 @@ void dma_start_transsmit(uint8_t *buffer, uint16_t buffer_len){
     DMA1_Channel2->CMAR = (uint32_t)buffer;
     DMA1_Channel2->CPAR = (uint32_t)(&(USART1->TDR));
     DMA1_Channel2->CCR |= DMA_CCR_EN;
+}
+
+uint32_t get_adc(){
+	ADC1->CHSELR |= ADC_CHSELR_CHSEL16;  //Select chanel where sensor connected
+//	ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2;
+	ADC->CCR |= ADC_CCR_TSEN;			//Enable temperature sensor
+	ADC1->CR |= ADC_CR_ADSTART;			//starting adc converting
+	while(!(ADC1->ISR && ADC_ISR_EOC));
+
+	int32_t temperature; /* will contain the temperature in degrees Celsius */
+	temperature = ((uint32_t) *TEMP30_CAL_ADDR
+	- ((uint32_t) ADC1->DR * VDD_APPLI / VDD_CALIB)) * 1000;
+	temperature = (temperature / AVG_SLOPE) + 30;
+
+	return temperature;
 }

@@ -3,7 +3,6 @@
 #include "hw_init.h"
 
 void hdw_init();
-int get_adc();
 void dma_start_transsmit(uint8_t *buffer, uint16_t buffer_len);
 void dma_usart_config(uint8_t *buffer, uint16_t buffer_len);
 
@@ -21,8 +20,6 @@ int main(void)
 	//Инициализируем регистр флагов
 	HW.STATE = 0;
 
-
-	hdw_init();			//Инициализация переферии.
 	dma_usart_config(BUFFER, sizeof(BUFFER));
 
 	while(1)

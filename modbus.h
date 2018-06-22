@@ -1,6 +1,10 @@
 #define TRUE 1
 #define FALSE 0
 #define FLASH_START 0x08000000
+
+//Макросы
+#define reg_swap(a)		((a >> 8) | (a << 8))
+
 #define MAX_PDU_SIZE	254
 #define MDB_ADDR	25
 #define PDU_HEAD_SIZE	3
@@ -8,9 +12,9 @@
 #define INP_REG_COUNT	5
 #define CRC_BYTE_CNT	2
 //Контрольные флаги(настройки)
-#define COILS_HDW	((uint16_t)0x0001)
-#define INPUTS_HDW	((uint16_t)0x0002)
-#define reg_swap(a)		((a >> 8) | (a << 8))
+#define COILS_HDW	((uint16_t)0x0001) 			//читаем флаги аппаратных регистров или програмных регистров.
+#define BTEMP_EN	((uint16_t)0x0002)			//Включение чтения внутреннего датчика температуры.
+#define LSENS_EN	((uint16_t)0x0004)			///Включение/отключение датчика света.
 
 
 typedef unsigned int uint32_t;
@@ -49,17 +53,17 @@ uint8_t BUFFER[256];
 
 //Наполнение таблицы. часть касаемая содержания регистров хранения.
 typedef struct{
-	uint16_t CONT_FLAG;
+	uint16_t CONT_FLAG;	//флаги настроек функций (включено 1/ выключено 0)
 	uint16_t VAR_COIL;
-	uint8_t	SLAVE_ADRES;
+	uint16_t SLAVE_ADRES;
 }HoldingRegs_TypeDef;
 
 //Таблица регистров контроллера
 typedef struct{
-	uint16_t COILS;
-	uint16_t INPUTS;
-	HoldingRegs_TypeDef HOLD;
-	uint32_t INP_REG[INP_REG_COUNT];
+	uint16_t COILS;						//выхода - читаем командой 01, пишем командой 05
+	uint16_t INPUTS;					//дискретные входа, читаем командой 02
+	HoldingRegs_TypeDef HOLD;			//регистры хранения, читаем через комманду 04, пишем командой 06
+	uint32_t INP_REG[INP_REG_COUNT]; //только читаем через команду 04
 }RegsTable_TypeDef;
 
 //Структура сообщения протокола.
