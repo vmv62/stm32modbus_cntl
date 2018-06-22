@@ -2,22 +2,29 @@
 
 void hdw_init(){
 
-//ADC config
-//      RCC->APB2ENR |= RCC_APB2ENR_ADC1EN; //Enable clock to ADC
-        RCC->APB2ENR |= RCC_APB2ENR_USART1EN; //Enable clock to Usart
-        RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
-        RCC->AHBENR |= RCC_AHBENR_DMA1EN;	//Включили тактирование ДМА
-        RCC->APB2ENR |= RCC_APB2ENR_TIM17EN; //Включили тактирование таймера 6
-//      while(!(ADC1->ISR && ADC_ISR_ADRDY)){} //wait while ADC calibrate
-        asm("CPSIE i");				//Включение глобальных прерываний.
-        NVIC->ISER |= 1<<USART1_IRQn;		//Включение прерываний от УСАРТА.
-        NVIC->ISER |= 1<<DMA1_Channel2_3_IRQn;	//Включаем прерывание от ДМА
-//        NVIC->ISER |= 1<<TIM17_IRQn;
+
 }
 
 
 
 void dma_usart_config(uint8_t *buffer, uint16_t buffer_len){
+	//Clock feeding enable
+    RCC->APB2ENR |= RCC_APB2ENR_ADC1EN; //Enable clock to ADC
+    RCC->APB2ENR |= RCC_APB2ENR_USART1EN; //Enable clock to Usart
+    RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
+    RCC->AHBENR |= RCC_AHBENR_DMA1EN;	//Включили тактирование ДМА
+    RCC->APB2ENR |= RCC_APB2ENR_TIM17EN; //Включили тактирование таймера 6
+//      while(!(ADC1->ISR && ADC_ISR_ADRDY)){} //wait while ADC calibrate
+    asm("CPSIE i");				//Включение глобальных прерываний.
+    NVIC->ISER |= 1<<USART1_IRQn;		//Включение прерываний от УСАРТА.
+    NVIC->ISER |= 1<<DMA1_Channel2_3_IRQn;	//Включаем прерывание от ДМА
+//        NVIC->ISER |= 1<<TIM17_IRQn;
+
+    //ADC
+    ADC1->CHSELR = ADC_CHSELR_CHSEL16;
+    ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2;
+    ADC->CCR |= ADC_CCR_TSEN;
+
 	//GPIO config
 	GPIOA->MODER |= GPIO_MODER_MODER9_1 | GPIO_MODER_MODER10_1;  			//Назначение альтернативных функций для выводов (переназначение)
 	GPIOA->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR9 | GPIO_OSPEEDER_OSPEEDR10;  	//Максимальная скорость работы портов

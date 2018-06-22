@@ -67,8 +67,8 @@ uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS)
 		return MODBUS_EXCEPTION_MEMORY_PARITY;
 	}
 
-	uint16_t adr = reg_swap(QueryPDU->reg_addr);
-	uint16_t cnt = reg_swap(QueryPDU->reg_count);
+	uint16_t adr = reg_swap(QueryPDU->reg_addr);	//Выделяем адрес регистра в таблице
+	uint16_t cnt = reg_swap(QueryPDU->reg_count);	//выделяем колличество регистров для чтения.
 //Еслм сумма адрес плюс количество превышают колличество регистров, выдаем ошибку.
 	if((adr + cnt) > COIL_REG_COUNT){
 		return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
@@ -96,6 +96,7 @@ uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS)
 
 	uint16_t adr = reg_swap(QueryPDU->reg_addr);
 	uint16_t cnt = reg_swap(QueryPDU->reg_count);
+	uint8_t b_cnt = cnt * sizeof(uint16_t);
 
 	uint16_t tm_crc = reg_swap(crc16(buffer, 6));
 	if(QueryPDU->crc != tm_crc)
@@ -129,12 +130,12 @@ uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS)
 //	buffer[6] = (uint8_t)REGS->INP_REG[adr];
 
 
-	uint16_t CRC16 = crc16(buffer, ((cnt * 2)+3));
+	uint16_t CRC16 = crc16(buffer, ((cnt * 2)+PDU_HEAD_SIZE));
 
-	buffer[3 + (cnt * 2)] = CRC16 >> 8;
-	buffer[3 + (cnt * 2) + 1] = CRC16;
+	buffer[PDU_HEAD_SIZE + b_cnt] = CRC16 >> 8;
+	buffer[PDU_HEAD_SIZE + b_cnt + 1] = CRC16;
 
-	dma_start_transsmit(buffer, (3 + (cnt * 2) + 2));
+	dma_start_transsmit(buffer, (PDU_HEAD_SIZE + b_cnt + CRC_BYTE_CNT));
 	return 0;
 }
 
@@ -147,7 +148,7 @@ uint8_t error_handler(uint8_t error, uint8_t *buffer)
 
 	buffer[3] = CRC16;
 	buffer[4] = CRC16 >> 8;
-	dma_start_transsmit(buffer, (PDU_HEAD_SIZE+buffer[2]+CRC_BYTE_CNT));
+	dma_start_transsmit(buffer, (PDU_HEAD_SIZE + buffer[2] + CRC_BYTE_CNT));
 	return 0;
 }
 
