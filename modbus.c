@@ -40,17 +40,22 @@ uint16_t regs_filling(RegsTable_TypeDef *REGS)
 	}
 
 // Аналогично записи выше, только заполлняем регистры входов.
-	if(REGS->HOLD.CONT_FLAG & INPUTS_HDW){
+	if(REGS->HOLD.CONT_FLAG & COILS_HDW){
 		REGS->COILS |= ((uint16_t)GPIOA->IDR);
 	}else{
 		REGS->COILS = ((uint16_t)USART1->ISR);
 	}
 
 //Заполняем регистры содержащие 16 битные данные для теста.
-	int np = get_adc();
-	REGS->INP_REG[0] = 0x10;
+//	int np = get_adc();
+	//Регистры хранения входных данных
+	// 0 - температура от датчика внутреннего
+	// 1 - тепература от внешнего 18б20 датчика	PA2
+	// 2 - значение от датчика освещенности		PA3
+	REGS->INP_REG[0] = get_adc(ADC_CHSELR_CHSEL16);
 	REGS->INP_REG[1] = 0x20;
 	REGS->INP_REG[2] = 0x30;
+	REGS->INP_REG[3] = 0x40;
 	REGS->INP_REG[4] = 0x50;
 
 	return 0;

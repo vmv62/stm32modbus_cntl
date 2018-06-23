@@ -72,17 +72,17 @@ void dma_start_transsmit(uint8_t *buffer, uint16_t buffer_len){
     DMA1_Channel2->CCR |= DMA_CCR_EN;
 }
 
-uint32_t get_adc(){
-	ADC1->CHSELR |= ADC_CHSELR_CHSEL16;  //Select chanel where sensor connected
+uint32_t get_adc(uint32_t chanel){
+	ADC1->CHSELR |= chanel; //ADC_CHSELR_CHSEL16;  //Select chanel where sensor connected
 //	ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2;
 	ADC->CCR |= ADC_CCR_TSEN;			//Enable temperature sensor
 	ADC1->CR |= ADC_CR_ADSTART;			//starting adc converting
 	while(!(ADC1->ISR && ADC_ISR_EOC));
 
-	int32_t temperature; /* will contain the temperature in degrees Celsius */
-	temperature = ((uint32_t) *TEMP30_CAL_ADDR
-	- ((uint32_t) ADC1->DR * VDD_APPLI / VDD_CALIB)) * 1000;
-	temperature = (temperature / AVG_SLOPE) + 30;
+//	int32_t temperature; /* will contain the temperature in degrees Celsius */
+//	temperature = ((uint32_t) *TEMP30_CAL_ADDR
+//	- ((uint32_t) ADC1->DR * VDD_APPLI / VDD_CALIB)) * 1000;
+//	temperature = (temperature / AVG_SLOPE) + 30;
 
-	return temperature;
+	return ADC1->DR;
 }

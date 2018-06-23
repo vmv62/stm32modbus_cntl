@@ -18,7 +18,7 @@ uint32_t cnt=0;
 int main(void)
 {
 	//Инициализируем регистр флагов
-	HW.STATE = 0;
+HW.STATE = 0;
 
 	dma_usart_config(BUFFER, sizeof(BUFFER));
 
