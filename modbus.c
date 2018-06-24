@@ -52,7 +52,7 @@ uint16_t regs_filling(RegsTable_TypeDef *REGS)
 	// 0 - температура от датчика внутреннего
 	// 1 - тепература от внешнего 18б20 датчика	PA2
 	// 2 - значение от датчика освещенности		PA3
-	REGS->INP_REG[0] = get_adc(ADC_CHSELR_CHSEL16);
+	REGS->INP_REG[0] = ();
 	REGS->INP_REG[1] = 0x20;
 	REGS->INP_REG[2] = 0x30;
 	REGS->INP_REG[3] = 0x40;
@@ -153,6 +153,21 @@ uint8_t error_handler(uint8_t error, uint8_t *buffer)
 	return 0;
 }
 
+uint16_t write_coils(uint8_t *buffer, RegsTable_TypeDef *REGS)
+{
+	if(QueryPDU->crc != tm_crc)
+		{
+			return MODBUS_EXCEPTION_MEMORY_PARITY;
+		}
+
+	//Еслм сумма адрес плюс количество превышают колличество регистров, выдаем ошибку.
+		if((adr + cnt) > INP_REG_COUNT)
+		{
+			return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
+		}
+	//Непосредственно читаем заполняем тело ответа
+
+};
 
 //Табличный подсчет контрольной суммы.
 uint16_t crc16(uint8_t *adr_buffer, uint32_t byte_cnt)

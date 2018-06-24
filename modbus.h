@@ -84,5 +84,6 @@ uint16_t regs_filling(RegsTable_TypeDef *REGS);
 uint16_t read_coils(uint8_t *buffer, RegsTable_TypeDef *REGS);
 uint16_t read_input_registers(uint8_t *buffer, RegsTable_TypeDef *REGS);		//чтение
 uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS);		// чтение коммандой 03
+uint16_t write_coils(uint8_t *buffer, RegsTable_TypeDef *REGS);	// функция 05
 uint8_t error_handler(uint8_t error, uint8_t *buffer);
 uint16_t crc16(uint8_t *adr_buffer, uint32_t byte_cnt);
