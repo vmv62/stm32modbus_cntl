@@ -153,6 +153,7 @@ uint8_t error_handler(uint8_t error, uint8_t *buffer)
 	return 0;
 }
 
+
 uint16_t write_coils(uint8_t *buffer, RegsTable_TypeDef *REGS)
 {
 	if(QueryPDU->crc != tm_crc)
