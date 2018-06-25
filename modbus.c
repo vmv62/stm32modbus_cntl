@@ -23,6 +23,10 @@ uint16_t pase_pdu(uint8_t *buffer, RegsTable_TypeDef *REGS){
 							error_handler(err_holder, buffer);
 						}
 								break;
+		case PRESET_SINGLE_REGISTER:	if((err_holder = write_holding_reg((uint8_t *)(PDU), REGS))){
+							error_handler(err_holder, buffer);
+						}
+								break;
 		default:	error_handler(MODBUS_EXCEPTION_ILLEGAL_FUNCTION, buffer);
 	}
 
