@@ -140,6 +140,29 @@ uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS)
 	return 0;
 }
 
+uint16_t write_holding_reg(uint8_t *buffer, RegsTable_TypeDef *REGS)
+{
+	PDU_Query6_TypeDef *QueryPDU = ((PDU_Query6_TypeDef *)buffer);
+	if(QueryPDU->crc != tm_crc)	//Проверка контрольной суммы
+		{
+			return MODBUS_EXCEPTION_MEMORY_PARITY;
+		}
+
+	uint16_t adr = reg_swap(QueryPDU->reg_addr);  //забираем адрес регистра данные в которые надо записать.
+	
+	
+	//Еслм адрес выходит за пределы границы регистров..
+		if(adr > INP_REG_COUNT)
+		{
+			return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
+		}
+
+	REGS->HLD_REG[adr] = reg_swap(QueryPDU->reg_data);	//Пишем данные в регистр.
+	dma_start_transsmit(buffer, (PDU_HEAD_SIZE + buffer[2] + CRC_BYTE_CNT));
+	return 0;
+};
+
+
 uint8_t error_handler(uint8_t error, uint8_t *buffer)
 {
 	buffer[1] = 0x8F;
@@ -149,26 +172,11 @@ uint8_t error_handler(uint8_t error, uint8_t *buffer)
 
 	buffer[3] = CRC16;
 	buffer[4] = CRC16 >> 8;
-	dma_start_transsmit(buffer, (PDU_HEAD_SIZE + buffer[2] + CRC_BYTE_CNT));
+	dma_start_transsmit(buffer, 6); // Данная команда содержит всегда одно и тоже колличество байт, ответ - эхо запроса.
 	return 0;
 }
 
 
-uint16_t write_coils(uint8_t *buffer, RegsTable_TypeDef *REGS)
-{
-	if(QueryPDU->crc != tm_crc)
-		{
-			return MODBUS_EXCEPTION_MEMORY_PARITY;
-		}
-
-	//Еслм сумма адрес плюс количество превышают колличество регистров, выдаем ошибку.
-		if((adr + cnt) > INP_REG_COUNT)
-		{
-			return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
-		}
-	//Непосредственно читаем заполняем тело ответа
-
-};
 
 //Табличный подсчет контрольной суммы.
 uint16_t crc16(uint8_t *adr_buffer, uint32_t byte_cnt)
