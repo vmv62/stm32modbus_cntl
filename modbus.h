@@ -10,6 +10,7 @@
 #define PDU_HEAD_SIZE	3
 #define COIL_REG_COUNT	16
 #define INP_REG_COUNT	5
+#define HLD_REG_COUNT	10
 #define CRC_BYTE_CNT	2
 //Контрольные флаги(настройки)
 #define COILS_HDW	((uint16_t)0x0001) 			//читаем флаги аппаратных регистров или програмных регистров.
@@ -49,20 +50,22 @@ enum {
     MODBUS_ILLEGAL_SLAVE_ADDR
 };
 
+//Названия регистров хранения данных.
+//Нужно сохранить в энергонезависимой памяти.
+enum{
+	MODBUS_HOLDING_REG_SLAVE_ADRESS;
+	
+};
+
 uint8_t BUFFER[256];
 
 //Наполнение таблицы. часть касаемая содержания регистров хранения.
-typedef struct{
-	uint16_t CONT_FLAG;	//флаги настроек функций (включено 1/ выключено 0)
-	uint16_t VAR_COIL;
-	uint16_t SLAVE_ADRES;
-}HoldingRegs_TypeDef;
 
 //Таблица регистров контроллера
 typedef struct{
 	uint16_t COILS;						//выхода - читаем командой 01, пишем командой 05
 	uint16_t INPUTS;					//дискретные входа, читаем командой 02
-	HoldingRegs_TypeDef HOLD;			//регистры хранения, читаем через комманду 04, пишем командой 06
+	uint16_t HLD_REG[HLD_REG_COUNT];			//регистры хранения, читаем через комманду 04, пишем командой 06
 	uint32_t INP_REG[INP_REG_COUNT]; //только читаем через команду 04
 }RegsTable_TypeDef;
 
