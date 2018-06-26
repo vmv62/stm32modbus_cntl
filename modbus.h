@@ -53,8 +53,8 @@ enum {
 //Названия регистров хранения данных.
 //Нужно сохранить в энергонезависимой памяти.
 enum{
-	MODBUS_HOLDING_REG_SLAVE_ADRESS;
-	
+	MODBUS_HOLDING_REG_SLAVE_ADRESS
+
 };
 
 uint8_t BUFFER[256];

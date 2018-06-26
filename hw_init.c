@@ -14,22 +14,18 @@ void dma_usart_config(uint8_t *buffer, uint16_t buffer_len){
     NVIC->ISER |= 1<<DMA1_Channel2_3_IRQn;	//Включаем прерывание от ДМА
 //        NVIC->ISER |= 1<<TIM17_IRQn;
 
-    //ADC
-    //Калибровка преобразователя	ADCAL=1 по завершению калибровки бит снимается аппаратно.
-/*    ADC1->CR |= ADC_CR_ADCAL;
+
+ /*   //Калибровка преобразователя	ADCAL=1 по завершению калибровки бит снимается аппаратно.
+    ADC1->CR |= ADC_CR_ADCAL;
     while(ADC1->CR & ADC_CR_ADCAL){;;}
     //Clear the ADRDY bit in ADC_ISR register by programming this bit to 1.
     //Выбираем канал для преобразования.
     ADC1->CHSELR |= ADC_CHSELR_CHSEL16;
-    ADC1->CCR &= ~ADC_CR_ADSTART;
     ADC1->CCR |= ADC_CCR_TSEN | ADC_CCR_VREFEN;
     //Set ADEN=1 in the ADC_CR register
     ADC1->CR |= ADC_CR_ADEN;
-    //
 */
-	ADC1->ISR |=(ADC_ISR_ADRDY); //Clear ADC ready flag
-	ADC1->CR |=(ADC_CR_ADEN); //ADC on
-
+    ADC1->CR |= ADC_CR_ADEN;
 
 	//GPIO config
 	GPIOA->MODER |= GPIO_MODER_MODER9_1 | GPIO_MODER_MODER10_1;  			//Назначение альтернативных функций для выводов (переназначение)
@@ -74,7 +70,7 @@ void dma_start_transsmit(uint8_t *buffer, uint16_t buffer_len){
 
 uint32_t get_adc(uint32_t chanel){
 	ADC1->CHSELR |= chanel; //ADC_CHSELR_CHSEL16;  //Select chanel where sensor connected
-//	ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2;
+	ADC1->SMPR |= ADC_SMPR1_SMPR ;
 	ADC->CCR |= ADC_CCR_TSEN;			//Enable temperature sensor
 	ADC1->CR |= ADC_CR_ADSTART;			//starting adc converting
 	while(!(ADC1->ISR && ADC_ISR_EOC));

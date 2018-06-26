@@ -37,18 +37,18 @@ uint16_t pase_pdu(uint8_t *buffer, RegsTable_TypeDef *REGS){
 uint16_t regs_filling(RegsTable_TypeDef *REGS)
 {
 // Если в настройках указано читать регистр порта(флаг выставлен) читаем порт, если нет, читаем регстр в памяти.
-	if(REGS->HOLD.CONT_FLAG & COILS_HDW){
+//	if(REGS->HOLD.CONT_FLAG & COILS_HDW){
 		REGS->COILS = ((uint16_t)GPIOA->ODR);		//Считываем регистры порта и помещаем их в таблицу.
-	}else{
+//	}else{
 //		REGC->COIL = 	//заполняем регистр в памяти функцией возвращающей состояние выходов.
-	}
+//	}
 
 // Аналогично записи выше, только заполлняем регистры входов.
-	if(REGS->HOLD.CONT_FLAG & COILS_HDW){
-		REGS->COILS |= ((uint16_t)GPIOA->IDR);
-	}else{
+//	if(REGS->HOLD.CONT_FLAG & COILS_HDW){
+//		REGS->COILS |= ((uint16_t)GPIOA->IDR);
+//	}else{
 		REGS->COILS = ((uint16_t)USART1->ISR);
-	}
+//	}
 
 //Заполняем регистры содержащие 16 битные данные для теста.
 //	int np = get_adc();
@@ -56,8 +56,8 @@ uint16_t regs_filling(RegsTable_TypeDef *REGS)
 	// 0 - температура от датчика внутреннего
 	// 1 - тепература от внешнего 18б20 датчика	PA2
 	// 2 - значение от датчика освещенности		PA3
-	REGS->INP_REG[0] = ();
-	REGS->INP_REG[1] = 0x20;
+	REGS->INP_REG[0] = REGS->HLD_REG[0];
+	REGS->INP_REG[1] = get_adc(ADC_CHSELR_CHSEL16);
 	REGS->INP_REG[2] = 0x30;
 	REGS->INP_REG[3] = 0x40;
 	REGS->INP_REG[4] = 0x50;
@@ -147,6 +147,7 @@ uint16_t read_holding_registers(uint8_t *buffer, RegsTable_TypeDef *REGS)
 uint16_t write_holding_reg(uint8_t *buffer, RegsTable_TypeDef *REGS)
 {
 	PDU_Query6_TypeDef *QueryPDU = ((PDU_Query6_TypeDef *)buffer);
+	uint16_t tm_crc = reg_swap(crc16(buffer, 6));
 	if(QueryPDU->crc != tm_crc)	//Проверка контрольной суммы
 		{
 			return MODBUS_EXCEPTION_MEMORY_PARITY;
@@ -162,7 +163,7 @@ uint16_t write_holding_reg(uint8_t *buffer, RegsTable_TypeDef *REGS)
 		}
 
 	REGS->HLD_REG[adr] = reg_swap(QueryPDU->reg_data);	//Пишем данные в регистр.
-	dma_start_transsmit(buffer, (PDU_HEAD_SIZE + buffer[2] + CRC_BYTE_CNT));
+	dma_start_transsmit(buffer, 8);
 	return 0;
 };
 
